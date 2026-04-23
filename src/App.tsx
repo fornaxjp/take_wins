@@ -4,6 +4,7 @@ import { Editor } from './components/Editor';
 import { Sidebar } from './components/Sidebar';
 import { Auth } from './components/Auth';
 import { LockScreen } from './components/LockScreen';
+import { SettingsModal } from './components/SettingsModal';
 import { supabase, getAppLockSettings } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { Menu, RefreshCw } from 'lucide-react';
@@ -13,7 +14,7 @@ function App() {
   const {
     selectDocument, activeDocumentId, documents,
     syncAllDirty, setUserId, fetchFromCloud,
-    clearDocuments, isReady
+    clearDocuments, isReady, isSettingsModalOpen, setSettingsModalOpen
   } = useAppStore();
 
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -198,6 +199,7 @@ function App() {
         </div>
         <Editor />
       </main>
+      {isSettingsModalOpen && <SettingsModal onClose={() => setSettingsModalOpen(false)} />}
     </div>
   );
 }

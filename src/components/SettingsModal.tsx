@@ -4,9 +4,8 @@ import { useAppStore } from '../store/useAppStore';
 import { isBiometricAvailable, registerBiometric, clearBiometricCredential } from '../lib/biometric';
 import { hashPin } from '../lib/crypto';
 
-interface SettingsModalProps { onClose: () => void; }
-
-export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
+export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { clearDocuments, setSettingsModalOpen } = useAppStore();
   const [email, setEmail] = useState('');
   const [activeTab, setActiveTab] = useState<'account'|'applock'>('account');
 
@@ -26,9 +25,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   }, []);
 
   const handleLogout = async () => {
+    if (!window.confirm('ログアウトしてもよろしいですか？（内容はクラウドに保存されています）')) return;
     await supabase.auth.signOut();
-    useAppStore.getState().clearDocuments();
-    onClose();
+    clearDocuments();
+    setSettingsModalOpen(false);
   };
 
   const handleToggleAppLock = async (on: boolean) => {
@@ -87,7 +87,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           <div key={i} style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--text-color)', background: value.length > i ? 'var(--text-color)' : 'transparent' }} />
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, width: '100%', maxWidth: 280 }}>
         {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, i) => (
           <button key={i} disabled={k === ''} onClick={() => { if (k === '⌫') { if (target === 'new') setNewPin(p => p.slice(0,-1)); else setConfirmPin(p => p.slice(0,-1)); } else if (k) handlePinDigit(k, target); }}
             style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid var(--menu-border)', background: k === '' ? 'transparent' : 'var(--sidebar-bg)', color: 'var(--text-color)', cursor: k ? 'pointer' : 'default', visibility: k === '' ? 'hidden' : 'visible' }}>
@@ -99,29 +99,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   );
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
       <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <h2 className="modal-title">設定</h2>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
           {(['account','applock'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              style={{ flex: 1, padding: '8px', borderRadius: 6, border: '1px solid var(--menu-border)', background: activeTab === tab ? 'var(--text-color)' : 'transparent', color: activeTab === tab ? 'var(--bg-color)' : 'var(--text-color)', fontWeight: 600, cursor: 'pointer' }}>
+              style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--menu-border)', background: activeTab === tab ? 'var(--text-color)' : 'transparent', color: activeTab === tab ? 'var(--bg-color)' : 'var(--text-color)', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
               {tab === 'account' ? 'アカウント' : 'ロック設定'}
             </button>
           ))}
         </div>
 
         {activeTab === 'account' && (
-          <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div className="settings-section">
               <div className="settings-label">ログイン中のアカウント</div>
               <div className="settings-value">{email}</div>
             </div>
             <div className="settings-actions">
               <button onClick={handleLogout} className="btn-danger">ログアウト</button>
-              <button onClick={onClose} className="btn-secondary">閉じる</button>
+              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary">閉じる</button>
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === 'applock' && (
@@ -132,20 +132,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 <div style={{ fontSize: 13, color: 'var(--placeholder-color)' }}>起動時にPINを要求</div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input type="checkbox" checked={appLockEnabled} onChange={e => handleToggleAppLock(e.target.checked)} style={{ width: 18, height: 18 }} />
+                <input type="checkbox" checked={appLockEnabled} onChange={e => handleToggleAppLock(e.target.checked)} style={{ width: 22, height: 22 }} />
               </label>
             </div>
 
             {pinStep === 'enter' && (
               <div className="settings-section" style={{ textAlign: 'center' }}>
-                <div className="settings-label" style={{ marginBottom: 8 }}>新しいPINを入力（4桁）</div>
-                {pinError && <p style={{ color: 'var(--danger-color)', fontSize: 13 }}>{pinError}</p>}
+                <div className="settings-label" style={{ marginBottom: 12 }}>新しいPINを入力（4桁）</div>
+                {pinError && <p style={{ color: 'var(--danger-color)', fontSize: 13, marginBottom: 8 }}>{pinError}</p>}
                 <PinInput value={newPin} target="new" />
               </div>
             )}
             {pinStep === 'confirm' && (
               <div className="settings-section" style={{ textAlign: 'center' }}>
-                <div className="settings-label" style={{ marginBottom: 8 }}>PINを再入力して確認</div>
+                <div className="settings-label" style={{ marginBottom: 12 }}>PINを再入力して確認</div>
                 <PinInput value={confirmPin} target="confirm" />
               </div>
             )}
@@ -157,13 +157,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                   <div style={{ fontSize: 13, color: 'var(--placeholder-color)' }}>ロック解除に使用</div>
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={biometricEnabled} onChange={e => handleToggleBiometric(e.target.checked)} style={{ width: 18, height: 18 }} />
+                  <input type="checkbox" checked={biometricEnabled} onChange={e => handleToggleBiometric(e.target.checked)} style={{ width: 22, height: 22 }} />
                 </label>
               </div>
             )}
 
             <div className="settings-actions">
-              <button onClick={onClose} className="btn-secondary">閉じる</button>
+              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary" style={{ width: '100%' }}>閉じる</button>
             </div>
           </div>
         )}

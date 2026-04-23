@@ -26,9 +26,11 @@ interface AppState {
   sortType: 'custom' | 'date' | 'title' | 'tag';
   userId: string | null;
   isReady: boolean;
+  isSettingsModalOpen: boolean;
   _dirtyDocIds: Set<string>;
 
   setUserId: (id: string | null) => void;
+  setSettingsModalOpen: (open: boolean) => void;
   fetchFromCloud: () => Promise<void>;
   syncToCloud: (docId: string) => Promise<void>;
   syncAllDirty: () => Promise<void>;
@@ -66,9 +68,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
   sortType: 'custom',
   userId: null,
   isReady: false,
+  isSettingsModalOpen: false,
   _dirtyDocIds: new Set<string>(),
 
   setUserId: (id) => set({ userId: id }),
+  setSettingsModalOpen: (open) => set({ isSettingsModalOpen: open }),
 
   markDirty: (docId) => { get()._dirtyDocIds.add(docId); },
 
