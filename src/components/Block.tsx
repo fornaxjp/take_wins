@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, useState, KeyboardEvent, ChangeEvent } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import type { KeyboardEvent, ChangeEvent } from 'react';
 import { GripVertical } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import type { Block as BlockTypeInterface } from '../types';
@@ -100,7 +101,7 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
       return;
     }
     // フォーカスを当て直す
-    if (type !== 'table' && type !== 'divider') {
+    if (type !== 'table') {
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   };

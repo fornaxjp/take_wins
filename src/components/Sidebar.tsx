@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search } from 'lucide-react';
 import type { Document } from '../types';
+import { SettingsModal } from './SettingsModal';
 
 export const Sidebar: React.FC = () => {
   const { 
@@ -12,6 +13,7 @@ export const Sidebar: React.FC = () => {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -165,11 +167,20 @@ export const Sidebar: React.FC = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <div className="sidebar-user">Take wins</div>
+        <div 
+          className="sidebar-user" 
+          onClick={() => setShowSettings(true)} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          title="アカウント設定を開く"
+        >
+          ⚙️ 設定
+        </div>
         <button onClick={() => createDocument(null)} className="sidebar-new-btn" title="新規ドキュメント">
           <Plus size={16} />
         </button>
       </div>
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <div className="sidebar-search">
         <Search size={14} className="sidebar-search-icon" />
