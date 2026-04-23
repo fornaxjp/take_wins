@@ -994,3 +994,42 @@ body {
   color: var(--danger-color);
   border-color: var(--danger-color);
 }
+
+/* Lock Screen */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.lock-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 340px;
+}
+.lock-icon-big { font-size: 48px; }
+.lock-title { font-size: 18px; font-weight: 700; text-align: center; color: var(--text-color); margin: 0; }
+.pin-dots { display: flex; gap: 16px; margin: 8px 0; }
+.pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--text-color); transition: background 0.15s; }
+.pin-dot.filled { background: var(--text-color); }
+.pin-dot.error-dot { border-color: var(--danger-color); background: var(--danger-color); }
+.lock-error { color: var(--danger-color); font-size: 13px; margin: 0; text-align: center; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.pin-key { padding: 18px; font-size: 22px; font-weight: 600; border-radius: 10px; border: 1px solid var(--menu-border); background: var(--sidebar-bg); color: var(--text-color); cursor: pointer; transition: background 0.1s; touch-action: manipulation; }
+.pin-key:hover { background: var(--menu-hover); }
+.pin-key:active { transform: scale(0.94); }
+.pin-key-empty { visibility: hidden; }
+.biometric-unlock-btn { margin-top: 8px; background: transparent; border: 1px solid var(--menu-border); color: var(--text-color); padding: 12px 24px; border-radius: 8px; font-size: 14px; cursor: pointer; width: 100%; }
+.biometric-unlock-btn:hover { background: var(--menu-hover); }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+.shake { animation: shake 0.5s ease; }
+.remember-me-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--icon-color); cursor: pointer; text-align: left; }
+.remember-me-label input { cursor: pointer; }
+

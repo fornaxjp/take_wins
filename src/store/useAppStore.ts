@@ -13,7 +13,11 @@ interface AppState {
   setUserId: (id: string | null) => void;
   fetchFromCloud: () => Promise<void>;
   syncToCloud: (docId: string) => Promise<void>;
+  syncAllDirty: () => Promise<void>;
+  markDirty: (docId: string) => void;
   clearDocuments: () => void;
+
+  _dirtyDocIds: Set<string>;
 
   createDocument: (parentId?: string | null) => void;
   selectDocument: (id: string) => void;
@@ -44,20 +48,31 @@ export const useAppStore = create<AppState>()((set, get) => ({
   sortType: 'custom',
   userId: null,
   isReady: false,
+  _dirtyDocIds: new Set<string>(),
 
   setUserId: (id) => set({ userId: id }),
 
   clearDocuments: () => {
-    // Wipe all local state on logout
-    set({
-      documents: [],
-      activeDocumentId: null,
-      focusedBlockId: null,
-      userId: null,
-      isReady: false,
-    });
-    // Also clear any legacy localStorage keys
+    set({ documents: [], activeDocumentId: null, focusedBlockId: null, userId: null, isReady: false, _dirtyDocIds: new Set() });
     try { localStorage.removeItem('notion-clone-storage'); } catch (_) {}
+  },
+
+  markDirty: (docId) => {
+    get()._dirtyDocIds.add(docId);
+  },
+
+  syncAllDirty: async () => {
+    const { userId, documents, _dirtyDocIds } = get();
+    if (!userId || _dirtyDocIds.size === 0) return;
+    const toSync = documents.filter(d => _dirtyDocIds.has(d.id));
+    await Promise.all(toSync.map(doc =>
+      supabase.from('documents').upsert({
+        id: doc.id, user_id: userId, title: doc.title, blocks: doc.blocks,
+        isFavorite: doc.isFavorite, createdAt: doc.createdAt, updatedAt: doc.updatedAt,
+        order: doc.order, parentId: doc.parentId, properties: doc.properties,
+      })
+    ));
+    _dirtyDocIds.clear();
   },
 
   fetchFromCloud: async () => {
@@ -132,6 +147,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       activeDocumentId: newDoc.id,
       focusedBlockId: newDoc.blocks[0].id,
     }));
+    get().markDirty(newDoc.id);
   },
 
   selectDocument: (id) => set({ activeDocumentId: id }),
@@ -156,9 +172,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
     };
   }),
 
-  toggleFavorite: (id) => set((state) => ({
-    documents: state.documents.map(d => d.id === id ? { ...d, isFavorite: !d.isFavorite } : d),
-  })),
+  toggleFavorite: (id) => {
+    set((state) => ({
+      documents: state.documents.map(d => d.id === id ? { ...d, isFavorite: !d.isFavorite } : d),
+    }));
+    get().markDirty(id);
+  },
 
   moveDocument: (id, newParentId) => set((state) => {
     const getAllDescendants = (parentId: string, docs: Document[]): string[] => {
@@ -177,9 +196,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   setSortType: (type) => set({ sortType: type }),
 
-  updateDocumentTitle: (id, title) => set((state) => ({
-    documents: state.documents.map(d => d.id === id ? { ...d, title, updatedAt: Date.now() } : d),
-  })),
+  updateDocumentTitle: (id, title) => {
+    set((state) => ({
+      documents: state.documents.map(d => d.id === id ? { ...d, title, updatedAt: Date.now() } : d),
+    }));
+    get().markDirty(id);
+  },
 
   updateDocumentProperties: (id, properties) => set((state) => ({
     documents: state.documents.map(d =>
@@ -205,19 +227,25 @@ export const useAppStore = create<AppState>()((set, get) => ({
       newDocs[docIndex] = { ...doc, blocks: newBlocks, updatedAt: Date.now() };
       return { documents: newDocs, focusedBlockId: newId };
     });
+    const activeId = get().activeDocumentId;
+    if (activeId) get().markDirty(activeId);
     return newId;
   },
 
-  updateBlock: (id, content) => set((state) => {
-    if (!state.activeDocumentId) return state;
-    const docIndex = state.documents.findIndex(d => d.id === state.activeDocumentId);
-    if (docIndex === -1) return state;
-    const doc = state.documents[docIndex];
-    const newBlocks = doc.blocks.map(b => b.id === id ? { ...b, content } : b);
-    const newDocs = [...state.documents];
-    newDocs[docIndex] = { ...doc, blocks: newBlocks, updatedAt: Date.now() };
-    return { documents: newDocs };
-  }),
+  updateBlock: (id, content) => {
+    set((state) => {
+      if (!state.activeDocumentId) return state;
+      const docIndex = state.documents.findIndex(d => d.id === state.activeDocumentId);
+      if (docIndex === -1) return state;
+      const doc = state.documents[docIndex];
+      const newBlocks = doc.blocks.map(b => b.id === id ? { ...b, content } : b);
+      const newDocs = [...state.documents];
+      newDocs[docIndex] = { ...doc, blocks: newBlocks, updatedAt: Date.now() };
+      return { documents: newDocs };
+    });
+    const activeId = get().activeDocumentId;
+    if (activeId) get().markDirty(activeId);
+  },
 
   updateBlockType: (id, type) => set((state) => {
     if (!state.activeDocumentId) return state;
