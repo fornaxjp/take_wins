@@ -4,7 +4,7 @@ import { Editor } from './components/Editor';
 import { Sidebar } from './components/Sidebar';
 import { Auth } from './components/Auth';
 import { LockScreen } from './components/LockScreen';
-import { supabase, loadRememberedSession, clearRememberedSession, getAppLockSettings } from './lib/supabase';
+import { supabase, getAppLockSettings } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { Menu, RefreshCw } from 'lucide-react';
 import type { Document } from './types';
@@ -12,131 +12,116 @@ import type { Document } from './types';
 function App() {
   const {
     selectDocument, activeDocumentId, documents,
-    syncToCloud, syncAllDirty, setUserId,
-    fetchFromCloud, clearDocuments, isReady
+    syncAllDirty, setUserId, fetchFromCloud,
+    clearDocuments, isReady
   } = useAppStore();
 
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const loadedUserIdRef = useRef<string | null>(null);
-  const isSyncingToCloud = useRef(false);
+  const [syncStatus, setSyncStatus] = useState<'idle'|'syncing'|'done'|'error'>('idle');
+  const loadedUidRef = useRef<string | null>(null);
+  const isSyncingRef = useRef(false);
 
-  // ── Manual refresh ────────────────────────────────────────────
-  const handleRefresh = useCallback(async () => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-    await syncAllDirty();        // flush local changes to cloud first
-    await fetchFromCloud();      // then pull latest from cloud
-    setIsSyncing(false);
-  }, [isSyncing, syncAllDirty, fetchFromCloud]);
+  // Manual sync
+  const handleSync = useCallback(async () => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    setSyncStatus('syncing');
+    try {
+      await syncAllDirty();
+      await fetchFromCloud();
+      setSyncStatus('done');
+      setTimeout(() => setSyncStatus('idle'), 2000);
+    } catch {
+      setSyncStatus('error');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+    } finally {
+      isSyncingRef.current = false;
+    }
+  }, [syncAllDirty, fetchFromCloud]);
 
-  // ── Save on tab hide / page hide ─────────────────────────────
+  // Save on hide, refresh on show
   useEffect(() => {
-    const onHide = () => {
-      if (document.visibilityState === 'hidden') syncAllDirty();
-    };
-    document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onHide);
-    return () => {
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onHide);
-    };
-  }, [syncAllDirty]);
-
-  // ── Fetch fresh data when tab becomes visible again ───────────
-  useEffect(() => {
-    const onVisible = async () => {
-      if (document.visibilityState === 'visible' && loadedUserIdRef.current) {
-        // Push any dirty local changes, then pull cloud
+    const onChange = async () => {
+      if (document.visibilityState === 'hidden') {
+        await syncAllDirty();
+      } else if (document.visibilityState === 'visible' && loadedUidRef.current) {
+        // Coming back to tab — flush then pull latest
         await syncAllDirty();
         await fetchFromCloud();
       }
     };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    document.addEventListener('visibilitychange', onChange);
+    window.addEventListener('pagehide', () => syncAllDirty());
+    return () => document.removeEventListener('visibilitychange', onChange);
   }, [syncAllDirty, fetchFromCloud]);
 
-  // ── Auth: load once per user, never re-fetch on token refresh ─
+  // Auth — Supabase handles session persistence automatically
   useEffect(() => {
-    const init = async () => {
-      // Try remembered session
-      const remembered = await loadRememberedSession();
-      const sessionToUse = remembered || (await supabase.auth.getSession()).data.session;
-
-      if (sessionToUse) {
-        setSession(sessionToUse);
-        setUserId(sessionToUse.user.id);
-        loadedUserIdRef.current = sessionToUse.user.id;
-        await fetchFromCloud();
-        if (getAppLockSettings().enabled) setIsAppLocked(true);
-      } else {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session && session.user.id !== loadedUidRef.current) {
+        loadedUidRef.current = session.user.id;
+        setUserId(session.user.id);
+        fetchFromCloud().then(() => {
+          if (getAppLockSettings().enabled) setIsAppLocked(true);
+        });
+      } else if (!session) {
         setSession(null);
       }
-    };
-    init();
+    });
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
       if (session) {
-        setSession(session);
-        // Only re-fetch if this is genuinely a new user login (not a token refresh)
-        if (session.user.id !== loadedUserIdRef.current) {
-          loadedUserIdRef.current = session.user.id;
+        if (session.user.id !== loadedUidRef.current) {
+          loadedUidRef.current = session.user.id;
           setUserId(session.user.id);
-          fetchFromCloud();
-          if (getAppLockSettings().enabled) setIsAppLocked(true);
+          fetchFromCloud().then(() => {
+            if (getAppLockSettings().enabled) setIsAppLocked(true);
+          });
         }
       } else {
-        loadedUserIdRef.current = null;
-        clearRememberedSession();
+        loadedUidRef.current = null;
         clearDocuments();
-        setSession(null);
         setIsAppLocked(false);
       }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── Supabase Realtime: push changes from other devices ────────
+  // Realtime updates from other devices
   useEffect(() => {
     if (!session?.user?.id) return;
     const uid = session.user.id;
-
     const channel = supabase
-      .channel(`docs-${uid}`)
+      .channel(`user-docs-${uid}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${uid}` },
         (payload) => {
-          // Ignore echoes of our own saves
-          if (isSyncingToCloud.current) return;
-
+          if (isSyncingRef.current) return;
           const store = useAppStore.getState();
           if (payload.eventType === 'INSERT') {
             const n = payload.new as Document;
             if (!store.documents.some(d => d.id === n.id))
               useAppStore.setState(s => ({ documents: [...s.documents, n] }));
           } else if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as Document;
-            // Don't overwrite locally-dirty docs
-            if (store._dirtyDocIds.has(updated.id)) return;
-            useAppStore.setState(s => ({
-              documents: s.documents.map(d => d.id === updated.id ? updated : d)
-            }));
+            const u = payload.new as Document;
+            if (store._dirtyDocIds.has(u.id)) return; // don't overwrite dirty local data
+            useAppStore.setState(s => ({ documents: s.documents.map(d => d.id === u.id ? u : d) }));
           } else if (payload.eventType === 'DELETE') {
-            useAppStore.setState(s => ({
-              documents: s.documents.filter(d => d.id !== (payload.old as any).id)
-            }));
+            useAppStore.setState(s => ({ documents: s.documents.filter(d => d.id !== (payload.old as any).id) }));
           }
         }
-      )
-      .subscribe();
-
+      ).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
-  // ── URL sync ──────────────────────────────────────────────────
+  // URL sync
   useEffect(() => {
     if (!isReady || documents.length === 0) return;
     const pathId = window.location.pathname.slice(1);
@@ -154,34 +139,27 @@ function App() {
     }
   }, [activeDocumentId, documents]);
 
-  // ── Cloud sync: every 5s + immediately on doc switch ──────────
+  // Periodic cloud sync every 5 seconds
   useEffect(() => {
     if (!session || !activeDocumentId) return;
-
     const interval = setInterval(async () => {
       const store = useAppStore.getState();
-      if (store._dirtyDocIds.size > 0) {
-        isSyncingToCloud.current = true;
+      if (store._dirtyDocIds.size > 0 && !isSyncingRef.current) {
+        isSyncingRef.current = true;
         await store.syncAllDirty();
-        setTimeout(() => { isSyncingToCloud.current = false; }, 500);
+        setTimeout(() => { isSyncingRef.current = false; }, 500);
       }
     }, 5000);
-
     return () => {
-      // Sync immediately when leaving a document
+      // Sync immediately on document switch
       const store = useAppStore.getState();
       if (store._dirtyDocIds.has(activeDocumentId)) {
-        isSyncingToCloud.current = true;
-        store.syncToCloud(activeDocumentId).then(() => {
-          store._dirtyDocIds.delete(activeDocumentId);
-          setTimeout(() => { isSyncingToCloud.current = false; }, 500);
-        });
+        store.syncToCloud(activeDocumentId).then(() => store._dirtyDocIds.delete(activeDocumentId));
       }
       clearInterval(interval);
     };
   }, [activeDocumentId, session]);
 
-  // ── Render states ─────────────────────────────────────────────
   const Spinner = () => (
     <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
       <div className="loading-spinner" />
@@ -194,40 +172,28 @@ function App() {
 
   if (isAppLocked) {
     const ls = getAppLockSettings();
-    return (
-      <LockScreen
-        title="Take wins"
-        pinHash={ls.pin}
-        biometricEnabled={ls.biometric}
-        onUnlock={() => setIsAppLocked(false)}
-      />
-    );
+    return <LockScreen title="Take wins" pinHash={ls.pin} biometricEnabled={ls.biometric} onUnlock={() => setIsAppLocked(false)} />;
   }
 
   const activeTitle = documents.find(d => d.id === activeDocumentId)?.title;
+  const syncIcon = syncStatus === 'syncing' ? '⏳' : syncStatus === 'done' ? '✓' : syncStatus === 'error' ? '✗' : '';
 
   return (
     <div className="app-container">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="app-main">
         <div className="mobile-header">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="mobile-menu-btn"
-            aria-label="Open menu"
-          >
+          <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" aria-label="Open menu">
             <Menu size={22} />
           </button>
-          <span className="mobile-header-title">
-            {activeTitle || 'Take wins'}
-          </span>
-          <button
-            onClick={handleRefresh}
-            className="mobile-menu-btn"
-            aria-label="Sync"
-            style={{ opacity: isSyncing ? 0.5 : 1 }}
-          >
-            <RefreshCw size={18} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
+          <span className="mobile-header-title">{activeTitle || 'Take wins'}</span>
+          <button onClick={handleSync} className="mobile-menu-btn" aria-label="Sync now"
+            style={{ position: 'relative', fontSize: 11, color: syncStatus === 'error' ? 'var(--danger-color)' : syncStatus === 'done' ? '#22c55e' : 'var(--text-color)' }}>
+            {syncStatus === 'syncing'
+              ? <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              : syncStatus !== 'idle'
+              ? <span style={{ fontWeight: 700 }}>{syncIcon}</span>
+              : <RefreshCw size={18} />}
           </button>
         </div>
         <Editor />
