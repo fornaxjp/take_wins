@@ -17,6 +17,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    useAppStore.getState().clearDocuments();
     useAppStore.getState().setUserId(null);
     onClose();
   };

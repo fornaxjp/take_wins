@@ -13,6 +13,7 @@ interface AppState {
   setUserId: (id: string | null) => void;
   fetchFromCloud: () => Promise<void>;
   syncToCloud: (docId: string) => Promise<void>;
+  clearDocuments: () => void;
 
   createDocument: (parentId?: string | null) => void;
   selectDocument: (id: string) => void;
@@ -55,12 +56,36 @@ export const useAppStore = create<AppState>()(
 
       setUserId: (id) => set({ userId: id }),
 
+      clearDocuments: () => {
+        set({ documents: [], activeDocumentId: null, focusedBlockId: null });
+      },
+
       fetchFromCloud: async () => {
         const { userId } = get();
         if (!userId) return;
         const { data, error } = await supabase.from('documents').select('*');
-        if (data && !error && data.length > 0) {
-          set({ documents: data as Document[] });
+        if (data && !error) {
+          if (data.length > 0) {
+            const currentActive = get().activeDocumentId;
+            const stillExists = data.some(d => d.id === currentActive);
+            set({ 
+              documents: data as Document[],
+              activeDocumentId: stillExists ? currentActive : data[0].id
+            });
+          } else {
+            const newDoc: Document = {
+              id: generateId(),
+              title: '無題のドキュメント',
+              blocks: [createInitialBlock()],
+              isFavorite: false,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              order: 0,
+              parentId: null
+            };
+            set({ documents: [newDoc], activeDocumentId: newDoc.id, focusedBlockId: newDoc.blocks[0].id });
+            setTimeout(() => get().syncToCloud(newDoc.id), 0);
+          }
         }
       },
 
