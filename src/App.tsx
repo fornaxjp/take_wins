@@ -168,9 +168,13 @@ function App() {
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="app-main">
         <div className="mobile-header">
-          <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" title="メニューを開く">
-            <Menu size={20} />
+          <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" title="メニュー" aria-label="Open menu">
+            <Menu size={22} />
           </button>
+          <span className="mobile-header-title">
+            {documents.find(d => d.id === activeDocumentId)?.title || 'Take wins'}
+          </span>
+          <div style={{ minWidth: 40 }} />
         </div>
         <Editor />
       </main>
