@@ -14,44 +14,40 @@ function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
-  const localSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncingRef = useRef(false);
+  // Track which user's data is already loaded to avoid re-fetching on token refresh
+  const loadedUserIdRef = useRef<string | null>(null);
 
   // Save immediately when user switches tabs or closes window
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        syncAllDirty();
-      }
-    };
-    const handleBeforeUnload = () => { syncAllDirty(); };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    const onHide = () => { if (document.visibilityState === 'hidden') syncAllDirty(); };
+    const onUnload = () => syncAllDirty();
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onUnload); // more reliable than beforeunload
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onUnload);
     };
   }, [syncAllDirty]);
 
-  // Auth init
+  // Auth init — only fetch from cloud ONCE per user login
   useEffect(() => {
     const init = async () => {
-      // Try remembered session first
       const remembered = await loadRememberedSession();
       if (remembered) {
         setSession(remembered);
         setUserId(remembered.user.id);
+        loadedUserIdRef.current = remembered.user.id;
         await fetchFromCloud();
-        // Check app lock
         const ls = getAppLockSettings();
         if (ls.enabled) setIsAppLocked(true);
         return;
       }
-      // Fall back to current Supabase session (in-memory only)
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setSession(session);
         setUserId(session.user.id);
+        loadedUserIdRef.current = session.user.id;
         await fetchFromCloud();
         const ls = getAppLockSettings();
         if (ls.enabled) setIsAppLocked(true);
@@ -64,9 +60,18 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setSession(session);
-        setUserId(session.user.id);
-        fetchFromCloud();
+        // Only fetch from cloud if this is a DIFFERENT user (real login)
+        // Skip if it's just a token refresh for the same user already loaded
+        if (session.user.id !== loadedUserIdRef.current) {
+          loadedUserIdRef.current = session.user.id;
+          setUserId(session.user.id);
+          fetchFromCloud();
+          const ls = getAppLockSettings();
+          if (ls.enabled) setIsAppLocked(true);
+        }
       } else {
+        // Real logout
+        loadedUserIdRef.current = null;
         clearRememberedSession();
         clearDocuments();
         setSession(null);
@@ -76,7 +81,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Realtime sync
+  // Realtime sync from other devices — only apply if not currently syncing locally
   useEffect(() => {
     if (!session?.user?.id) return;
     const userId = session.user.id;
@@ -89,7 +94,10 @@ function App() {
           if (!store.documents.some(d => d.id === n.id))
             useAppStore.setState(s => ({ documents: [...s.documents, n] }));
         } else if (payload.eventType === 'UPDATE') {
-          useAppStore.setState(s => ({ documents: s.documents.map(d => d.id === (payload.new as Document).id ? payload.new as Document : d) }));
+          const updated = payload.new as Document;
+          // Don't overwrite a document that is currently dirty (has unsaved local changes)
+          if (store._dirtyDocIds.has(updated.id)) return;
+          useAppStore.setState(s => ({ documents: s.documents.map(d => d.id === updated.id ? updated : d) }));
         } else if (payload.eventType === 'DELETE') {
           useAppStore.setState(s => ({ documents: s.documents.filter(d => d.id !== (payload.old as any).id) }));
         }
@@ -115,17 +123,30 @@ function App() {
     }
   }, [activeDocumentId, documents]);
 
-  // Debounced cloud sync
+  // Auto-sync: save active document every 3 seconds if dirty, and immediately on doc switch
   useEffect(() => {
     if (!session || !activeDocumentId) return;
-    if (localSyncTimer.current) clearTimeout(localSyncTimer.current);
-    localSyncTimer.current = setTimeout(async () => {
-      isSyncingRef.current = true;
-      await syncToCloud(activeDocumentId);
-      setTimeout(() => { isSyncingRef.current = false; }, 300);
-    }, 1500);
-    return () => { if (localSyncTimer.current) clearTimeout(localSyncTimer.current); };
-  }, [documents, activeDocumentId, session]);
+    const interval = setInterval(async () => {
+      const store = useAppStore.getState();
+      if (store._dirtyDocIds.has(activeDocumentId)) {
+        isSyncingRef.current = true;
+        await syncToCloud(activeDocumentId);
+        store._dirtyDocIds.delete(activeDocumentId);
+        setTimeout(() => { isSyncingRef.current = false; }, 300);
+      }
+    }, 3000);
+    return () => {
+      // Sync previous document immediately when switching away
+      if (useAppStore.getState()._dirtyDocIds.has(activeDocumentId)) {
+        isSyncingRef.current = true;
+        syncToCloud(activeDocumentId).then(() => {
+          useAppStore.getState()._dirtyDocIds.delete(activeDocumentId);
+          setTimeout(() => { isSyncingRef.current = false; }, 300);
+        });
+      }
+      clearInterval(interval);
+    };
+  }, [activeDocumentId, session]);
 
   const Spinner = () => (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
@@ -139,7 +160,7 @@ function App() {
 
   if (isAppLocked) {
     const ls = getAppLockSettings();
-    return <LockScreen title="Take wins にアクセスするにはロック解除が必要です" pinHash={ls.pin} biometricEnabled={ls.biometric} onUnlock={() => setIsAppLocked(false)} />;
+    return <LockScreen title="Take wins" pinHash={ls.pin} biometricEnabled={ls.biometric} onUnlock={() => setIsAppLocked(false)} />;
   }
 
   return (
