@@ -8,44 +8,48 @@ import type { Session } from '@supabase/supabase-js';
 import { Menu } from 'lucide-react';
 
 function App() {
-  const { selectDocument, activeDocumentId, documents, fetchFromCloud, syncToCloud, setUserId } = useAppStore();
-  const [session, setSession] = useState<Session | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const {
+    selectDocument, activeDocumentId, documents,
+    syncToCloud, setUserId, fetchFromCloud, clearDocuments, isReady
+  } = useAppStore();
+
+  const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = not checked yet
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Authentication and initial fetch
+  // Step 1: Check auth once on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
         setUserId(session.user.id);
         fetchFromCloud();
+      } else {
+        setSession(null);
       }
-      setIsInitializing(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
         setUserId(session.user.id);
         fetchFromCloud();
       } else {
-        setUserId(null);
+        clearDocuments();
+        setSession(null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchFromCloud, setUserId]);
+  }, []);
 
-  // Handle URL Syncing
+  // Step 2: URL sync only after data is ready
   useEffect(() => {
+    if (!isReady || documents.length === 0) return;
     const pathId = window.location.pathname.slice(1);
     if (pathId && documents.some(d => d.id === pathId)) {
       selectDocument(pathId);
     }
-  }, [selectDocument, documents.length]);
+  }, [isReady]);
 
   useEffect(() => {
     if (activeDocumentId) {
@@ -55,38 +59,53 @@ function App() {
         document.title = activeDoc.title ? `${activeDoc.title} - Take wins` : '無題のドキュメント - Take wins';
       }
     } else {
-      window.history.replaceState(null, '', `/`);
+      window.history.replaceState(null, '', '/');
       document.title = 'Take wins';
     }
   }, [activeDocumentId, documents]);
 
-  // Background Syncing
+  // Step 3: Background cloud sync (debounced)
   useEffect(() => {
     if (!session || !activeDocumentId) return;
-    
-    // Debounce syncing to cloud to avoid spamming the DB on every keystroke
     const timeoutId = setTimeout(() => {
       syncToCloud(activeDocumentId);
-    }, 1500); // 1.5秒間操作がなければクラウドに保存
-
+    }, 1500);
     return () => clearTimeout(timeoutId);
-  }, [documents, activeDocumentId, session, syncToCloud]);
+  }, [documents, activeDocumentId, session]);
 
-  if (isInitializing) {
-    return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>読み込み中...</div>;
+  // === Render states ===
+
+  // Auth not checked yet — show blank screen (never show content)
+  if (session === undefined) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
+        <div className="loading-spinner" />
+      </div>
+    );
   }
 
+  // Not logged in — show login screen
   if (!session) {
     return <Auth />;
   }
 
+  // Logged in but still fetching documents
+  if (!isReady) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
+        <div className="loading-spinner" />
+      </div>
+    );
+  }
+
+  // All good — show the app
   return (
     <div className="app-container">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="app-main">
         <div className="mobile-header">
           <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" title="メニューを開く">
-             <Menu size={20} />
+            <Menu size={20} />
           </button>
         </div>
         <Editor />
