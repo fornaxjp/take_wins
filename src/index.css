@@ -703,6 +703,72 @@ body {
     margin: 16px;
     padding: 24px;
   }
+
+  /* Mobile UX Enhancements */
+  .editor-container {
+    padding: 20px 16px !important;
+  }
+  
+  .editor-title-input {
+    font-size: 32px !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* Force 16px to prevent iOS auto-zoom */
+  .block-input, 
+  .sidebar-search input, 
+  .sidebar-sort select,
+  .block-table input {
+    font-size: 16px !important;
+  }
+
+  /* Transform Slash Menu into a Bottom Sheet */
+  .slash-menu {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    top: auto !important;
+    width: 100vw !important;
+    border-radius: 20px 20px 0 0;
+    max-height: 60vh;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    z-index: 100;
+  }
+
+  .slash-menu-item {
+    padding: 16px;
+    border-bottom: 1px solid var(--menu-border);
+  }
+
+  .slash-menu-item-title {
+    font-size: 16px;
+  }
+
+  /* Hide drag handle on mobile */
+  .block-drag-handle {
+    display: none !important;
+  }
+
+  /* Increase touch targets */
+  .sidebar-item {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  
+  .sidebar-item-actions button {
+    padding: 8px;
+  }
+
+  .sidebar-expand-icon {
+    padding: 8px;
+    margin-left: -8px;
+  }
+
+  .modal-content {
+    margin: 16px;
+    padding: 24px;
+  }
 }
 
 /* Modal UI */

@@ -67,6 +67,9 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // 日本語入力（IME変換）中のEnterキーは無視する
+    if (e.nativeEvent.isComposing) return;
+
     if (e.key === 'Enter' && !e.shiftKey) {
       if (block.type === 'code') return;
       e.preventDefault();
