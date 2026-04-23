@@ -5,11 +5,13 @@ import { Sidebar } from './components/Sidebar';
 import { Auth } from './components/Auth';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { Menu } from 'lucide-react';
 
 function App() {
   const { selectDocument, activeDocumentId, documents, fetchFromCloud, syncToCloud, setUserId } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Authentication and initial fetch
   useEffect(() => {
@@ -80,8 +82,13 @@ function App() {
 
   return (
     <div className="app-container">
-      <Sidebar />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="app-main">
+        <div className="mobile-header">
+          <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" title="メニューを開く">
+             <Menu size={20} />
+          </button>
+        </div>
         <Editor />
       </main>
     </div>

@@ -4,7 +4,12 @@ import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search } from 
 import type { Document } from '../types';
 import { SettingsModal } from './SettingsModal';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { 
     documents, activeDocumentId, createDocument, selectDocument, 
     deleteDocument, toggleFavorite, setSortType, sortType, moveDocument 
@@ -82,7 +87,10 @@ export const Sidebar: React.FC = () => {
           onDragStart={(e) => handleDragStart(e, doc.id)}
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, doc.id)}
-          onClick={() => selectDocument(doc.id)}
+          onClick={() => {
+            selectDocument(doc.id);
+            if (window.innerWidth <= 768 && onClose) onClose();
+          }}
         >
           <div 
             className="sidebar-expand-icon"
@@ -165,7 +173,9 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="sidebar">
+    <>
+    <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}></div>
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-header">
         <div 
           className="sidebar-user" 
@@ -234,5 +244,6 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
