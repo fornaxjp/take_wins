@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAppStore } from './store/useAppStore';
 import { Editor } from './components/Editor';
 import { Sidebar } from './components/Sidebar';
@@ -6,51 +6,71 @@ import { Auth } from './components/Auth';
 import { LockScreen } from './components/LockScreen';
 import { supabase, loadRememberedSession, clearRememberedSession, getAppLockSettings } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Menu } from 'lucide-react';
+import { Menu, RefreshCw } from 'lucide-react';
 import type { Document } from './types';
 
 function App() {
-  const { selectDocument, activeDocumentId, documents, syncToCloud, syncAllDirty, setUserId, fetchFromCloud, clearDocuments, isReady } = useAppStore();
+  const {
+    selectDocument, activeDocumentId, documents,
+    syncToCloud, syncAllDirty, setUserId,
+    fetchFromCloud, clearDocuments, isReady
+  } = useAppStore();
+
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
-  const isSyncingRef = useRef(false);
-  // Track which user's data is already loaded to avoid re-fetching on token refresh
+  const [isSyncing, setIsSyncing] = useState(false);
   const loadedUserIdRef = useRef<string | null>(null);
+  const isSyncingToCloud = useRef(false);
 
-  // Save immediately when user switches tabs or closes window
+  // ── Manual refresh ────────────────────────────────────────────
+  const handleRefresh = useCallback(async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    await syncAllDirty();        // flush local changes to cloud first
+    await fetchFromCloud();      // then pull latest from cloud
+    setIsSyncing(false);
+  }, [isSyncing, syncAllDirty, fetchFromCloud]);
+
+  // ── Save on tab hide / page hide ─────────────────────────────
   useEffect(() => {
-    const onHide = () => { if (document.visibilityState === 'hidden') syncAllDirty(); };
-    const onUnload = () => syncAllDirty();
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') syncAllDirty();
+    };
     document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onUnload); // more reliable than beforeunload
+    window.addEventListener('pagehide', onHide);
     return () => {
       document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onUnload);
+      window.removeEventListener('pagehide', onHide);
     };
   }, [syncAllDirty]);
 
-  // Auth init — only fetch from cloud ONCE per user login
+  // ── Fetch fresh data when tab becomes visible again ───────────
+  useEffect(() => {
+    const onVisible = async () => {
+      if (document.visibilityState === 'visible' && loadedUserIdRef.current) {
+        // Push any dirty local changes, then pull cloud
+        await syncAllDirty();
+        await fetchFromCloud();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [syncAllDirty, fetchFromCloud]);
+
+  // ── Auth: load once per user, never re-fetch on token refresh ─
   useEffect(() => {
     const init = async () => {
+      // Try remembered session
       const remembered = await loadRememberedSession();
-      if (remembered) {
-        setSession(remembered);
-        setUserId(remembered.user.id);
-        loadedUserIdRef.current = remembered.user.id;
+      const sessionToUse = remembered || (await supabase.auth.getSession()).data.session;
+
+      if (sessionToUse) {
+        setSession(sessionToUse);
+        setUserId(sessionToUse.user.id);
+        loadedUserIdRef.current = sessionToUse.user.id;
         await fetchFromCloud();
-        const ls = getAppLockSettings();
-        if (ls.enabled) setIsAppLocked(true);
-        return;
-      }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setSession(session);
-        setUserId(session.user.id);
-        loadedUserIdRef.current = session.user.id;
-        await fetchFromCloud();
-        const ls = getAppLockSettings();
-        if (ls.enabled) setIsAppLocked(true);
+        if (getAppLockSettings().enabled) setIsAppLocked(true);
       } else {
         setSession(null);
       }
@@ -60,17 +80,14 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setSession(session);
-        // Only fetch from cloud if this is a DIFFERENT user (real login)
-        // Skip if it's just a token refresh for the same user already loaded
+        // Only re-fetch if this is genuinely a new user login (not a token refresh)
         if (session.user.id !== loadedUserIdRef.current) {
           loadedUserIdRef.current = session.user.id;
           setUserId(session.user.id);
           fetchFromCloud();
-          const ls = getAppLockSettings();
-          if (ls.enabled) setIsAppLocked(true);
+          if (getAppLockSettings().enabled) setIsAppLocked(true);
         }
       } else {
-        // Real logout
         loadedUserIdRef.current = null;
         clearRememberedSession();
         clearDocuments();
@@ -81,31 +98,45 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Realtime sync from other devices — only apply if not currently syncing locally
+  // ── Supabase Realtime: push changes from other devices ────────
   useEffect(() => {
     if (!session?.user?.id) return;
-    const userId = session.user.id;
-    const channel = supabase.channel(`docs-${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${userId}` }, (payload) => {
-        if (isSyncingRef.current) return;
-        const store = useAppStore.getState();
-        if (payload.eventType === 'INSERT') {
-          const n = payload.new as Document;
-          if (!store.documents.some(d => d.id === n.id))
-            useAppStore.setState(s => ({ documents: [...s.documents, n] }));
-        } else if (payload.eventType === 'UPDATE') {
-          const updated = payload.new as Document;
-          // Don't overwrite a document that is currently dirty (has unsaved local changes)
-          if (store._dirtyDocIds.has(updated.id)) return;
-          useAppStore.setState(s => ({ documents: s.documents.map(d => d.id === updated.id ? updated : d) }));
-        } else if (payload.eventType === 'DELETE') {
-          useAppStore.setState(s => ({ documents: s.documents.filter(d => d.id !== (payload.old as any).id) }));
+    const uid = session.user.id;
+
+    const channel = supabase
+      .channel(`docs-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${uid}` },
+        (payload) => {
+          // Ignore echoes of our own saves
+          if (isSyncingToCloud.current) return;
+
+          const store = useAppStore.getState();
+          if (payload.eventType === 'INSERT') {
+            const n = payload.new as Document;
+            if (!store.documents.some(d => d.id === n.id))
+              useAppStore.setState(s => ({ documents: [...s.documents, n] }));
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as Document;
+            // Don't overwrite locally-dirty docs
+            if (store._dirtyDocIds.has(updated.id)) return;
+            useAppStore.setState(s => ({
+              documents: s.documents.map(d => d.id === updated.id ? updated : d)
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            useAppStore.setState(s => ({
+              documents: s.documents.filter(d => d.id !== (payload.old as any).id)
+            }));
+          }
         }
-      }).subscribe();
+      )
+      .subscribe();
+
     return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
-  // URL sync
+  // ── URL sync ──────────────────────────────────────────────────
   useEffect(() => {
     if (!isReady || documents.length === 0) return;
     const pathId = window.location.pathname.slice(1);
@@ -123,33 +154,36 @@ function App() {
     }
   }, [activeDocumentId, documents]);
 
-  // Auto-sync: save active document every 3 seconds if dirty, and immediately on doc switch
+  // ── Cloud sync: every 5s + immediately on doc switch ──────────
   useEffect(() => {
     if (!session || !activeDocumentId) return;
+
     const interval = setInterval(async () => {
       const store = useAppStore.getState();
-      if (store._dirtyDocIds.has(activeDocumentId)) {
-        isSyncingRef.current = true;
-        await syncToCloud(activeDocumentId);
-        store._dirtyDocIds.delete(activeDocumentId);
-        setTimeout(() => { isSyncingRef.current = false; }, 300);
+      if (store._dirtyDocIds.size > 0) {
+        isSyncingToCloud.current = true;
+        await store.syncAllDirty();
+        setTimeout(() => { isSyncingToCloud.current = false; }, 500);
       }
-    }, 3000);
+    }, 5000);
+
     return () => {
-      // Sync previous document immediately when switching away
-      if (useAppStore.getState()._dirtyDocIds.has(activeDocumentId)) {
-        isSyncingRef.current = true;
-        syncToCloud(activeDocumentId).then(() => {
-          useAppStore.getState()._dirtyDocIds.delete(activeDocumentId);
-          setTimeout(() => { isSyncingRef.current = false; }, 300);
+      // Sync immediately when leaving a document
+      const store = useAppStore.getState();
+      if (store._dirtyDocIds.has(activeDocumentId)) {
+        isSyncingToCloud.current = true;
+        store.syncToCloud(activeDocumentId).then(() => {
+          store._dirtyDocIds.delete(activeDocumentId);
+          setTimeout(() => { isSyncingToCloud.current = false; }, 500);
         });
       }
       clearInterval(interval);
     };
   }, [activeDocumentId, session]);
 
+  // ── Render states ─────────────────────────────────────────────
   const Spinner = () => (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
+    <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
       <div className="loading-spinner" />
     </div>
   );
@@ -160,21 +194,41 @@ function App() {
 
   if (isAppLocked) {
     const ls = getAppLockSettings();
-    return <LockScreen title="Take wins" pinHash={ls.pin} biometricEnabled={ls.biometric} onUnlock={() => setIsAppLocked(false)} />;
+    return (
+      <LockScreen
+        title="Take wins"
+        pinHash={ls.pin}
+        biometricEnabled={ls.biometric}
+        onUnlock={() => setIsAppLocked(false)}
+      />
+    );
   }
+
+  const activeTitle = documents.find(d => d.id === activeDocumentId)?.title;
 
   return (
     <div className="app-container">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="app-main">
         <div className="mobile-header">
-          <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" title="メニュー" aria-label="Open menu">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="mobile-menu-btn"
+            aria-label="Open menu"
+          >
             <Menu size={22} />
           </button>
           <span className="mobile-header-title">
-            {documents.find(d => d.id === activeDocumentId)?.title || 'Take wins'}
+            {activeTitle || 'Take wins'}
           </span>
-          <div style={{ minWidth: 40 }} />
+          <button
+            onClick={handleRefresh}
+            className="mobile-menu-btn"
+            aria-label="Sync"
+            style={{ opacity: isSyncing ? 0.5 : 1 }}
+          >
+            <RefreshCw size={18} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
         </div>
         <Editor />
       </main>
