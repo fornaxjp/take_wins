@@ -25,7 +25,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   }, []);
 
   const handleLogout = async () => {
-    if (!window.confirm('ログアウトしてもよろしいですか？（内容はクラウドに保存されています）')) return;
+    // Direct logout for better responsiveness on mobile
     await supabase.auth.signOut();
     clearDocuments();
     setSettingsModalOpen(false);

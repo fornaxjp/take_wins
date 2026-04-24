@@ -177,7 +177,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       <div className="sidebar-header">
         <div 
           className="sidebar-user" 
-          onClick={() => setSettingsModalOpen(true)} 
+          onClick={() => {
+            setSettingsModalOpen(true);
+            if (window.innerWidth <= 768 && onClose) onClose();
+          }} 
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           title="アカウント設定を開く"
         >

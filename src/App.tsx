@@ -147,8 +147,13 @@ function App() {
       const store = useAppStore.getState();
       if (store._dirtyDocIds.size > 0 && !isSyncingRef.current) {
         isSyncingRef.current = true;
-        await store.syncAllDirty();
-        setTimeout(() => { isSyncingRef.current = false; }, 500);
+        try {
+          await store.syncAllDirty();
+        } catch (e) {
+          console.error('[TakeWins] Periodic sync failed:', e);
+        } finally {
+          setTimeout(() => { isSyncingRef.current = false; }, 500);
+        }
       }
     }, 5000);
     return () => {

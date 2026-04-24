@@ -108,7 +108,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return;
     }
 
-    if (data && data.length > 0) {
+      console.log(`[TakeWins] Cloud fetch success. Found ${data.length} docs.`);
       // Parse cloud docs from JSON
       const cloudDocs: Document[] = data.map((row: any) =>
         typeof row.data === 'string' ? JSON.parse(row.data) : row.data
@@ -139,12 +139,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
       set({
         documents: sorted,
-        activeDocumentId: stillExists ? currentActive : sorted[0]?.id ?? null,
+        activeDocumentId: stillExists ? currentActive : (sorted[0]?.id ?? null),
         isReady: true,
       });
       saveLocal(userId, sorted);
 
-      if (get()._dirtyDocIds.size > 0) get().syncAllDirty();
+      if (get()._dirtyDocIds.size > 0) {
+        console.log(`[TakeWins] Pushing ${get()._dirtyDocIds.size} local-only docs to cloud...`);
+        get().syncAllDirty();
+      }
     } else {
       // No cloud data
       if (localDocs.length > 0) {
@@ -175,12 +178,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const { error } = await supabase.from('documents').upsert({
       id: doc.id,
       user_id: userId,
-      data: doc,               // entire Document stored as JSONB — no column name issues
+      data: doc,
       updated_at: doc.updatedAt,
     });
 
     if (error) {
-      console.error('[TakeWins] syncToCloud error:', error.message);
+      console.error('[TakeWins] syncToCloud error:', error.code, error.message);
+    } else {
+      console.log(`[TakeWins] Synced doc ${docId} to cloud.`);
     }
   },
 
@@ -197,10 +202,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
     if (rows.length === 0) return;
 
+    console.log(`[TakeWins] Bulk syncing ${rows.length} docs...`);
     const { error } = await supabase.from('documents').upsert(rows);
     if (error) {
-      console.error('[TakeWins] syncAllDirty error:', error.message);
+      console.error('[TakeWins] syncAllDirty error:', error.code, error.message);
     } else {
+      console.log(`[TakeWins] Bulk sync successful.`);
       _dirtyDocIds.clear();
     }
   },
