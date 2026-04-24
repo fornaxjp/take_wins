@@ -192,13 +192,16 @@ function App() {
           <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn" aria-label="Open menu">
             <Menu size={22} />
           </button>
-          <span className="mobile-header-title">{activeTitle || 'Take wins'}</span>
+          <div className="mobile-header-center">
+            <span className="mobile-header-title">{activeTitle || 'Take wins'}</span>
+            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.0.1 - Cloud Active</span>
+          </div>
           <button onClick={handleSync} className="mobile-menu-btn" aria-label="Sync now"
             style={{ position: 'relative', fontSize: 11, color: syncStatus === 'error' ? 'var(--danger-color)' : syncStatus === 'done' ? '#22c55e' : 'var(--text-color)' }}>
             {syncStatus === 'syncing'
               ? <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
               : syncStatus !== 'idle'
-              ? <span style={{ fontWeight: 700 }}>{syncIcon}</span>
+              ? <span style={{ fontWeight: 700, fontSize: 16 }}>{syncIcon}</span>
               : <RefreshCw size={18} />}
           </button>
         </div>

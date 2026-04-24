@@ -18,6 +18,8 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState('');
+  const [dbStatus, setDbStatus] = useState<'testing'|'ok'|'error'|null>(null);
+  const [dbError, setDbError] = useState('');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => { if (user) setEmail(user.email || ''); });
@@ -25,10 +27,31 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   }, []);
 
   const handleLogout = async () => {
-    // Direct logout for better responsiveness on mobile
     await supabase.auth.signOut();
     clearDocuments();
     setSettingsModalOpen(false);
+    window.location.reload();
+  };
+
+  const handleTestConnection = async () => {
+    setDbStatus('testing');
+    setDbError('');
+    try {
+      const { error } = await supabase.from('documents').select('id').limit(1);
+      if (error) throw error;
+      setDbStatus('ok');
+    } catch (e: any) {
+      console.error('[TakeWins] Connection test failed:', e);
+      setDbStatus('error');
+      setDbError(e.message || '接続に失敗しました');
+    }
+  };
+
+  const handleEmergencyReset = () => {
+    if (!window.confirm('【警告】すべてのローカルデータを削除し、強制ログアウトします。よろしいですか？')) return;
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/';
   };
 
   const handleToggleAppLock = async (on: boolean) => {
@@ -112,14 +135,32 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         </div>
 
         {activeTab === 'account' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="settings-section">
               <div className="settings-label">ログイン中のアカウント</div>
               <div className="settings-value">{email}</div>
             </div>
-            <div className="settings-actions">
-              <button onClick={handleLogout} className="btn-danger">ログアウト</button>
-              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary">閉じる</button>
+
+            <div className="settings-section">
+              <div className="settings-label">同期ステータス診断</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: dbStatus === 'ok' ? '#22c55e' : dbStatus === 'error' ? '#ef4444' : '#666' }} />
+                <span style={{ fontSize: 14 }}>
+                  {dbStatus === 'ok' ? '接続成功' : dbStatus === 'error' ? '接続エラー' : '未テスト'}
+                </span>
+                <button onClick={handleTestConnection} style={{ marginLeft: 'auto', fontSize: 12, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', cursor: 'pointer' }}>
+                  テスト実行
+                </button>
+              </div>
+              {dbError && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 8, wordBreak: 'break-all' }}>理由: {dbError}</p>}
+            </div>
+
+            <div style={{ marginTop: 8 }}>
+              <button onClick={handleLogout} className="btn-danger" style={{ width: '100%', marginBottom: 12 }}>ログアウト</button>
+              <button onClick={handleEmergencyReset} style={{ width: '100%', padding: '10px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 24 }}>
+                全データをリセットして強制再起動
+              </button>
+              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary" style={{ width: '100%' }}>閉じる</button>
             </div>
           </div>
         )}
