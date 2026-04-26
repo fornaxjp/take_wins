@@ -28,7 +28,6 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   }, []);
 
   const handleLogout = async () => {
-    // Immediate logout with confirmation
     if (!window.confirm('ログアウトしますか？')) return;
     await supabase.auth.signOut();
     clearDocuments();
@@ -151,10 +150,10 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               {dbError && <p style={{ color: '#ef4444', fontSize: '11px', marginTop: 8 }}>{dbError}</p>}
             </div>
 
-            <div className="settings-actions" style={{ marginTop: 8 }}>
-              <button onClick={handleLogout} className="btn-danger">ログアウト</button>
-              <button onClick={handleEmergencyReset} style={{ padding: '12px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: 10, fontWeight: 600 }}>全リセット初期化</button>
-              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary">閉じる</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+              <button onClick={handleLogout} className="btn-danger" style={{ width: '100%', height: '50px' }}>ログアウト</button>
+              <button onClick={handleEmergencyReset} style={{ width: '100%', padding: '12px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: 10, fontWeight: 600 }}>全リセット初期化</button>
+              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary" style={{ width: '100%', height: '50px' }}>閉じる</button>
             </div>
           </div>
         )}
@@ -188,7 +187,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             )}
             
             <div className="settings-actions">
-              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary">閉じる</button>
+              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary" style={{ width: '100%', height: '50px' }}>閉じる</button>
             </div>
           </div>
         )}
