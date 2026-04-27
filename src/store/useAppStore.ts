@@ -188,4 +188,4 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   setFocusedBlockId: (id) => set({ focusedBlockId: id }),
-})));
+}));
