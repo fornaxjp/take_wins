@@ -101,3 +101,5 @@ export const Editor: React.FC = () => {
     </div>
   );
 };
+
+export default Editor;
