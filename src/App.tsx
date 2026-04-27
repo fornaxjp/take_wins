@@ -105,7 +105,7 @@ function App() {
           <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><Menu size={22} /></button>
           <div className="mobile-header-center">
             <span className="mobile-header-title">{activeTitle || 'Take wins'}</span>
-            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.0.3 - Theme Ready</span>
+            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.0.4</span>
           </div>
           <button onClick={handleSync} className="mobile-menu-btn" style={{ position: 'relative' }}>
             {syncStatus === 'syncing' ? <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <span style={{ fontSize: 16 }}>{syncIcon || <RefreshCw size={18} />}</span>}

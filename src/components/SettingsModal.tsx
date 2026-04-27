@@ -100,7 +100,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
       <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0 }}>設定</h2>
-          <span style={{ fontSize: '10px', opacity: 0.5 }}>v2.0.3</span>
+          <span style={{ fontSize: '10px', opacity: 0.5 }}>v2.0.4</span>
         </div>
         
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>

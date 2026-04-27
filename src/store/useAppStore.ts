@@ -148,24 +148,44 @@ export const useAppStore = create<AppState>()((set, get) => ({
     return id;
   },
 
-  updateBlock: (id, content) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, content } : b), updatedAt: Date.now() } : d) })),
+  updateBlock: (id, content) => {
+    set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, content } : b), updatedAt: Date.now() } : d) }));
+    const aid = get().activeDocumentId;
+    if (aid) get()._dirtyDocIds.add(aid);
+  },
 
-  updateBlockType: (id, type) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, type } : b), updatedAt: Date.now() } : d) })),
+  updateBlockType: (id, type) => {
+    set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, type } : b), updatedAt: Date.now() } : d) }));
+    const aid = get().activeDocumentId;
+    if (aid) get()._dirtyDocIds.add(aid);
+  },
 
-  updateBlockData: (id, data) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, data: { ...b.data, ...data } } : b) } : d) })),
+  updateBlockData: (id, data) => {
+    set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, data: { ...b.data, ...data } } : b) } : d) }));
+    const aid = get().activeDocumentId;
+    if (aid) get()._dirtyDocIds.add(aid);
+  },
 
-  removeBlock: (id) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.filter(b => b.id !== id), updatedAt: Date.now() } : d) })),
+  removeBlock: (id) => {
+    set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.filter(b => b.id !== id), updatedAt: Date.now() } : d) }));
+    const aid = get().activeDocumentId;
+    if (aid) get()._dirtyDocIds.add(aid);
+  },
 
-  moveBlock: (dragId, dropId) => set(s => {
-    const doc = s.documents.find(d => d.id === s.activeDocumentId);
-    if (!doc) return s;
-    const from = doc.blocks.findIndex(b => b.id === dragId);
-    const to = doc.blocks.findIndex(b => b.id === dropId);
-    const newBlocks = [...doc.blocks];
-    const [moved] = newBlocks.splice(from, 1);
-    newBlocks.splice(to, 0, moved);
-    return { documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...doc, blocks: newBlocks, updatedAt: Date.now() } : d) };
-  }),
+  moveBlock: (dragId, dropId) => {
+    set(s => {
+      const doc = s.documents.find(d => d.id === s.activeDocumentId);
+      if (!doc) return s;
+      const from = doc.blocks.findIndex(b => b.id === dragId);
+      const to = doc.blocks.findIndex(b => b.id === dropId);
+      const newBlocks = [...doc.blocks];
+      const [moved] = newBlocks.splice(from, 1);
+      newBlocks.splice(to, 0, moved);
+      return { documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...doc, blocks: newBlocks, updatedAt: Date.now() } : d) };
+    });
+    const aid = get().activeDocumentId;
+    if (aid) get()._dirtyDocIds.add(aid);
+  },
 
   setFocusedBlockId: (id) => set({ focusedBlockId: id }),
 })));
