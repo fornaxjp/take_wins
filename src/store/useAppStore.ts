@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Block, BlockType, Document } from '../types';
 import { supabase } from '../lib/supabase';
 
+// localStorage Helpers
 const localKey = (uid: string) => `tw_u_${uid}`;
 const saveLocal = (uid: string, docs: Document[]) => {
   try { localStorage.setItem(localKey(uid), JSON.stringify(docs)); } catch (_) {}
@@ -22,12 +23,12 @@ interface AppState {
   userId: string | null;
   isReady: boolean;
   isSettingsModalOpen: boolean;
-  theme: 'light' | 'dark'; // ← 追加
+  theme: 'light' | 'dark';
   _dirtyDocIds: Set<string>;
 
   setUserId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
-  setTheme: (theme: 'light' | 'dark') => void; // ← 追加
+  setTheme: (theme: 'light' | 'dark') => void;
   fetchFromCloud: () => Promise<void>;
   syncToCloud: (docId: string) => Promise<void>;
   syncAllDirty: () => Promise<void>;
@@ -87,6 +88,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (data && data.length > 0) {
       const cloudDocs: Document[] = data.map((row: any) => typeof row.data === 'string' ? JSON.parse(row.data) : row.data);
       set({ documents: cloudDocs, activeDocumentId: cloudDocs[0]?.id || null, isReady: true });
+      saveLocal(userId, cloudDocs);
     } else {
       set({ isReady: true });
     }
@@ -114,16 +116,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set(s => ({ documents: [...s.documents, newDoc], activeDocumentId: newDoc.id }));
     get()._dirtyDocIds.add(newDoc.id);
   },
+
   selectDocument: (id) => set({ activeDocumentId: id }),
+
   deleteDocument: (id) => set(s => ({ documents: s.documents.filter(d => d.id !== id) })),
+
   toggleFavorite: (id) => set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, isFavorite: !d.isFavorite } : d) })),
+
   moveDocument: (id, pid) => set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, parentId: pid } : d) })),
+
   setSortType: (t) => set({ sortType: t }),
+
   updateDocumentTitle: (id, title) => {
     set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, title, updatedAt: Date.now() } : d) }));
     get()._dirtyDocIds.add(id);
   },
+
   updateDocumentProperties: (id, props) => set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, properties: { ...d.properties, ...props } } : d) })),
+
   addBlock: (afterId, content = '', type = 'text') => {
     const id = generateId();
     set(s => {
@@ -137,10 +147,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (get().activeDocumentId) get()._dirtyDocIds.add(get().activeDocumentId!);
     return id;
   },
+
   updateBlock: (id, content) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, content } : b), updatedAt: Date.now() } : d) })),
+
   updateBlockType: (id, type) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, type } : b), updatedAt: Date.now() } : d) })),
+
   updateBlockData: (id, data) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.map(b => b.id === id ? { ...b, data: { ...b.data, ...data } } : b) } : d) })),
+
   removeBlock: (id) => set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.filter(b => b.id !== id), updatedAt: Date.now() } : d) })),
+
   moveBlock: (dragId, dropId) => set(s => {
     const doc = s.documents.find(d => d.id === s.activeDocumentId);
     if (!doc) return s;
@@ -151,5 +166,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     newBlocks.splice(to, 0, moved);
     return { documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...doc, blocks: newBlocks, updatedAt: Date.now() } : d) };
   }),
+
   setFocusedBlockId: (id) => set({ focusedBlockId: id }),
 })));
