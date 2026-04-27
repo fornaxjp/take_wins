@@ -58,41 +58,66 @@ export const Editor: React.FC = () => {
           placeholder="無題のドキュメント"
         />
 
-        {/* Properties Section */}
         <div className="editor-properties">
           <div className="property-row">
             <div className="property-label">
-              <CircleDashed size={16} /> ステータス
+              <CircleDashed size={18} className="icon-blue" />
+              <span>ステータス</span>
             </div>
             <div className="property-value">
               <select 
+                style={{ 
+                  background: 'var(--hover-bg)', 
+                  border: 'none', 
+                  padding: '6px 12px', 
+                  borderRadius: '12px', 
+                  fontSize: '13px',
+                  color: 'var(--text-color)',
+                  fontWeight: 500,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
                 value={props.status || ''} 
                 onChange={(e) => updateDocumentProperties(doc.id, { status: e.target.value || null })}
               >
                 <option value="">未設定</option>
-                <option value="Not Started">未着手</option>
-                <option value="In Progress">進行中</option>
-                <option value="Done">完了</option>
+                <option value="Not Started">⚪️ 未着手</option>
+                <option value="In Progress">🔵 進行中</option>
+                <option value="Done">🟢 完了</option>
               </select>
             </div>
           </div>
           <div className="property-row">
             <div className="property-label">
-              <Tag size={16} /> タグ
+              <Tag size={18} className="icon-green" />
+              <span>タグ</span>
             </div>
-            <div className="property-value tags-container">
+            <div className="property-value" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {props.tags.map(tag => (
                 <span key={tag} className="property-tag">
                   {tag}
-                  <button onClick={() => removeTag(tag)}>×</button>
+                  <button onClick={() => removeTag(tag)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center' }}>×</button>
                 </span>
               ))}
-              <input type="text" placeholder="タグを追加 (Enter)" onKeyDown={handleAddTag} className="tag-input" />
+              <input 
+                type="text" 
+                placeholder="＋ タグを追加" 
+                onKeyDown={handleAddTag} 
+                style={{ 
+                  background: 'transparent', 
+                  border: '1px dashed var(--menu-border)', 
+                  padding: '4px 12px', 
+                  borderRadius: '16px', 
+                  fontSize: '12px',
+                  color: 'var(--placeholder-color)',
+                  outline: 'none'
+                }} 
+              />
             </div>
           </div>
         </div>
 
-        <div className="editor-blocks">
+        <div className="editor-blocks" style={{ marginTop: 20 }}>
           {doc.blocks.map((block) => (
             <Block key={block.id} block={block} />
           ))}

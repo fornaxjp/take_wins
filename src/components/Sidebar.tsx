@@ -36,6 +36,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const favorites = displayDocs.filter(d => d.isFavorite);
 
+  const getIconColorClass = (id: string) => {
+    const colors = ['icon-blue', 'icon-red', 'icon-yellow', 'icon-green'];
+    const charCodeSum = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return colors[charCodeSum % colors.length];
+  };
+
   const renderItem = (doc: Document, depth: number) => {
     const isExpanded = expanded[doc.id] || false;
     const hasChildren = documents.some(d => d.parentId === doc.id);
@@ -46,10 +52,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="sidebar-expand-icon" onClick={(e) => { e.stopPropagation(); toggleExpand(doc.id, e); }}>
             {hasChildren ? (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}
           </div>
-          <FileText size={16} className="sidebar-icon" />
-          <span className="sidebar-item-title">{doc.title || '無題'}</span>
+          <FileText size={18} className={`sidebar-icon ${getIconColorClass(doc.id)}`} />
+          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title || '無題のドキュメント'}</span>
           <div className="sidebar-item-actions">
-            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(doc.id); }}><Star size={14} className={doc.isFavorite ? 'star-active' : ''} /></button>
+            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(doc.id); }}><Star size={14} fill={doc.isFavorite ? "currentColor" : "none"} className={doc.isFavorite ? 'icon-yellow' : ''} /></button>
             <button onClick={(e) => { e.stopPropagation(); deleteDocument(doc.id); }}><Trash2 size={14} /></button>
           </div>
         </div>
@@ -67,19 +73,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}></div>
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-user" onClick={() => { setSettingsModalOpen(true); if (onClose) onClose(); }} style={{ cursor: 'pointer' }}>
-            ⚙️ 設定
+          <div className="sidebar-logo">
+            <div style={{ display: 'flex', gap: 2 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-blue)' }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-red)' }} />
+            </div>
+            <span>Take wins</span>
           </div>
-          <button onClick={() => createDocument(null)} className="sidebar-new-btn"><Plus size={16} /></button>
+          <button onClick={() => { setSettingsModalOpen(true); if (onClose) onClose(); }} style={{ background: 'transparent', border: 'none', color: 'var(--placeholder-color)', cursor: 'pointer' }}>
+            <Search size={20} />
+          </button>
         </div>
-        <div className="sidebar-search">
-          <Search size={14} className="sidebar-search-icon" />
-          <input type="text" placeholder="検索..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+
+        <button onClick={() => createDocument(null)} className="sidebar-new-btn-google">
+          <Plus size={24} className="icon-blue" />
+          <span>作成</span>
+        </button>
+
+        <div className="sidebar-search-container">
+          <Search size={18} className="sidebar-search-icon" />
+          <input type="text" placeholder="マイドキュメントを検索" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
-        <div className="sidebar-section">
+
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           <div className="sidebar-section-title">お気に入り</div>
-          {favorites.map(doc => renderItem(doc, 0))}
-          <div className="sidebar-section-title" style={{ marginTop: 16 }}>プライベート</div>
+          {favorites.length > 0 ? favorites.map(doc => renderItem(doc, 0)) : <div style={{ padding: '8px 24px', fontSize: 12, opacity: 0.5 }}>お気に入りはまだありません</div>}
+          
+          <div className="sidebar-section-title">プライベート</div>
           {renderDocTree(null, 0)}
         </div>
       </div>

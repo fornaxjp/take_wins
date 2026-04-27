@@ -97,64 +97,78 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
   return (
     <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ margin: 0 }}>設定</h2>
-          <span style={{ fontSize: '10px', opacity: 0.5 }}>v2.0.4</span>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 520, borderRadius: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 400 }}>設定</h2>
+          <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600 }}>v2.0.4</span>
         </div>
         
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 32, background: 'var(--hover-bg)', padding: 4, borderRadius: 16 }}>
           {(['account','applock'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1px solid var(--menu-border)', background: activeTab === tab ? 'var(--text-color)' : 'transparent', color: activeTab === tab ? 'var(--bg-color)' : 'var(--text-color)', fontWeight: 700, cursor: 'pointer' }}>
+              style={{ 
+                flex: 1, 
+                padding: '10px', 
+                borderRadius: 12, 
+                border: 'none', 
+                background: activeTab === tab ? 'var(--bg-color)' : 'transparent', 
+                color: activeTab === tab ? 'var(--google-blue)' : 'var(--placeholder-color)', 
+                fontWeight: 600, 
+                fontSize: 14,
+                cursor: 'pointer',
+                boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}>
               {tab === 'account' ? 'アカウント' : 'ロック'}
             </button>
           ))}
         </div>
 
         {activeTab === 'account' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="settings-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div className="settings-label">外観モード</div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{theme === 'light' ? 'ライトモード' : 'ダークモード'}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 4 }}>外観モード</div>
+                <div style={{ fontSize: 15 }}>{theme === 'light' ? 'ライトモード' : 'ダークモード'}</div>
               </div>
               <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
-                style={{ background: 'var(--accent-color)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 700 }}>
-                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                style={{ background: 'var(--hover-bg)', color: 'var(--text-color)', border: 'none', padding: '10px 20px', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                {theme === 'light' ? <Moon size={16} className="icon-blue" /> : <Sun size={16} className="icon-yellow" />}
                 切り替え
               </button>
             </div>
 
-            <div className="settings-section">
-              <div className="settings-label">ログイン中</div>
-              <div className="settings-value">{email}</div>
+            <div style={{ height: 1, background: 'var(--menu-border)' }} />
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 4 }}>ログイン中</div>
+              <div style={{ fontSize: 15, fontWeight: 500 }}>{email}</div>
             </div>
 
-            <div className="settings-section">
-              <div className="settings-label">同期ステータス</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: dbStatus === 'ok' ? '#22c55e' : dbStatus === 'error' ? '#ef4444' : '#666' }} />
-                <span>{dbStatus === 'ok' ? '正常' : dbStatus === 'error' ? 'エラー' : '未確認'}</span>
-                <button onClick={handleTestConnection} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 6, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)' }}>テスト</button>
+            <div style={{ height: 1, background: 'var(--menu-border)' }} />
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>同期ステータス</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--sidebar-bg)', padding: '12px 16px', borderRadius: 16 }}>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: dbStatus === 'ok' ? 'var(--google-green)' : dbStatus === 'error' ? 'var(--google-red)' : 'var(--placeholder-color)' }} />
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{dbStatus === 'ok' ? '正常に接続中' : dbStatus === 'error' ? '接続エラー' : '未確認'}</span>
+                <button onClick={handleTestConnection} style={{ marginLeft: 'auto', padding: '6px 14px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'white', color: 'var(--text-color)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>テスト</button>
               </div>
-              {dbError && <p style={{ color: '#ef4444', fontSize: '11px', marginTop: 8 }}>{dbError}</p>}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
-              <button onClick={handleLogout} className="btn-danger" style={{ width: '100%', height: '50px' }}>ログアウト</button>
-              <button onClick={handleEmergencyReset} style={{ width: '100%', padding: '12px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: 10, fontWeight: 600 }}>全リセット初期化</button>
-              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary" style={{ width: '100%', height: '50px' }}>閉じる</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+              <button onClick={() => setSettingsModalOpen(false)} style={{ width: '100%', padding: '14px', background: 'var(--google-blue)', color: 'white', border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer' }}>完了</button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button onClick={handleLogout} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--placeholder-color)', border: '1px solid var(--menu-border)', borderRadius: 24, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>ログアウト</button>
+                <button onClick={handleEmergencyReset} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--google-red)', border: '1px solid var(--menu-border)', borderRadius: 24, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>全リセット</button>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === 'applock' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* ... ロック設定の中身 ... */}
-            <div className="settings-actions">
-              <button onClick={() => setSettingsModalOpen(false)} className="btn-secondary">閉じる</button>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <p style={{ fontSize: 14, color: 'var(--placeholder-color)', textAlign: 'center', padding: '40px 0' }}>ロック設定は現在準備中です</p>
+            <button onClick={() => setSettingsModalOpen(false)} style={{ width: '100%', padding: '14px', background: 'var(--google-blue)', color: 'white', border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer' }}>閉じる</button>
           </div>
         )}
       </div>

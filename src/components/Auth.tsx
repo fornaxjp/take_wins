@@ -32,17 +32,25 @@ export const Auth: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-box">
-        <h1 className="auth-title">Take wins</h1>
-        <p className="auth-subtitle">どの端末でも同期されるプライベートワークスペース</p>
+        <div className="auth-logo">
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--google-blue)' }} />
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--google-red)' }} />
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--google-yellow)' }} />
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--google-green)' }} />
+        </div>
+        <h1 className="auth-subtitle">{isLoginMode ? 'ログイン' : 'アカウント作成'}</h1>
+        <p className="auth-desc">Take wins で作業を続けましょう</p>
+        
         <form className="auth-form" onSubmit={handleSubmit}>
           <input type="email" placeholder="メールアドレス" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input type="password" placeholder="パスワード（6文字以上）" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+          <input type="password" placeholder="パスワード" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
           <button type="submit" disabled={loading} className="auth-submit-btn">
-            {loading ? '処理中...' : (isLoginMode ? 'ログイン' : '新規登録')}
+            {loading ? '処理中...' : (isLoginMode ? '次へ' : '登録する')}
           </button>
         </form>
+
         <button className="auth-toggle-btn" onClick={() => { setIsLoginMode(!isLoginMode); setMessage(''); }}>
-          {isLoginMode ? 'アカウントをお持ちでない方は新規登録' : '既にアカウントをお持ちの方はログイン'}
+          {isLoginMode ? 'アカウントを作成する' : '既にアカウントをお持ちの方'}
         </button>
         {message && <p className="auth-message">{message}</p>}
       </div>
