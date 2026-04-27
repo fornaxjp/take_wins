@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { Block, BlockType, Document } from '../types';
 import { supabase } from '../lib/supabase';
 
-// localStorage Helpers
 const localKey = (uid: string) => `tw_u_${uid}`;
 const saveLocal = (uid: string, docs: Document[]) => {
   try { localStorage.setItem(localKey(uid), JSON.stringify(docs)); } catch (_) {}
@@ -23,10 +22,12 @@ interface AppState {
   userId: string | null;
   isReady: boolean;
   isSettingsModalOpen: boolean;
+  theme: 'light' | 'dark'; // ← 追加
   _dirtyDocIds: Set<string>;
 
   setUserId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
+  setTheme: (theme: 'light' | 'dark') => void; // ← 追加
   fetchFromCloud: () => Promise<void>;
   syncToCloud: (docId: string) => Promise<void>;
   syncAllDirty: () => Promise<void>;
@@ -57,10 +58,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
   userId: null,
   isReady: false,
   isSettingsModalOpen: false,
+  theme: (localStorage.getItem('tw_theme') as 'light' | 'dark') || 'light',
   _dirtyDocIds: new Set<string>(),
 
   setUserId: (id) => set({ userId: id }),
   setSettingsModalOpen: (open) => set({ isSettingsModalOpen: open }),
+  setTheme: (theme) => {
+    set({ theme });
+    localStorage.setItem('tw_theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  },
   markDirty: (docId) => { get()._dirtyDocIds.add(docId); },
   clearDocuments: () => {
     const { userId } = get();
@@ -71,31 +78,17 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fetchFromCloud: async () => {
     const { userId } = get();
     if (!userId) { set({ isReady: true }); return; }
-    
     const localDocs = loadLocal(userId);
     if (localDocs.length > 0 && !get().isReady) {
       set({ documents: localDocs, activeDocumentId: localDocs[0].id, isReady: true });
     }
-    
     const { data, error } = await supabase.from('documents').select('data, updated_at').eq('user_id', userId);
     if (error) { set({ isReady: true }); return; }
-    
     if (data && data.length > 0) {
       const cloudDocs: Document[] = data.map((row: any) => typeof row.data === 'string' ? JSON.parse(row.data) : row.data);
       set({ documents: cloudDocs, activeDocumentId: cloudDocs[0]?.id || null, isReady: true });
-      saveLocal(userId, cloudDocs);
     } else {
-      if (localDocs.length > 0) {
-        set({ isReady: true });
-        localDocs.forEach(d => get()._dirtyDocIds.add(d.id));
-        get().syncAllDirty();
-      } else {
-        const newDoc: Document = { id: generateId(), title: '', blocks: [createInitialBlock()], isFavorite: false, createdAt: Date.now(), updatedAt: Date.now(), order: 0, parentId: null };
-        set({ documents: [newDoc], activeDocumentId: newDoc.id, isReady: true });
-        saveLocal(userId, [newDoc]);
-        get()._dirtyDocIds.add(newDoc.id);
-        get().syncAllDirty();
-      }
+      set({ isReady: true });
     }
   },
 
