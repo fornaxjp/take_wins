@@ -13,7 +13,8 @@ function App() {
   const {
     selectDocument, activeDocumentId, documents,
     syncAllDirty, setUserId, fetchFromCloud,
-    clearDocuments, isReady, isSettingsModalOpen, setSettingsModalOpen
+    clearDocuments, isReady, isSettingsModalOpen, setSettingsModalOpen,
+    theme
   } = useAppStore();
 
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -22,6 +23,11 @@ function App() {
   const [syncStatus, setSyncStatus] = useState<'idle'|'syncing'|'done'|'error'>('idle');
   const loadedUidRef = useRef<string | null>(null);
   const isSyncingRef = useRef(false);
+
+  // Apply theme to HTML element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const handleSync = useCallback(async () => {
     if (isSyncingRef.current) return;
@@ -99,7 +105,7 @@ function App() {
           <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><Menu size={22} /></button>
           <div className="mobile-header-center">
             <span className="mobile-header-title">{activeTitle || 'Take wins'}</span>
-            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.0.2 - Cloud Sync</span>
+            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.0.3 - Theme Ready</span>
           </div>
           <button onClick={handleSync} className="mobile-menu-btn" style={{ position: 'relative' }}>
             {syncStatus === 'syncing' ? <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <span style={{ fontSize: 16 }}>{syncIcon || <RefreshCw size={18} />}</span>}
