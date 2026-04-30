@@ -41,7 +41,7 @@ interface AppState {
   createDocument: (parentId?: string | null) => void;
   createTemplateDocument: (type: 'password' | 'account' | 'meeting') => void;
   selectDocument: (id: string) => void;
-  deleteDocument: (id: string) => void;
+  deleteDocument: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => void;
   moveDocument: (id: string, newParentId: string | null) => void;
   setSortType: (type: 'custom' | 'date' | 'title' | 'tag') => void;
@@ -169,7 +169,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   selectDocument: (id) => set({ activeDocumentId: id }),
 
-  deleteDocument: (id) => set(s => ({ documents: s.documents.filter(d => d.id !== id) })),
+  deleteDocument: async (id) => {
+    const { userId } = get();
+    set(s => ({ documents: s.documents.filter(d => d.id !== id), activeDocumentId: s.activeDocumentId === id ? null : s.activeDocumentId }));
+    if (userId) {
+      await supabase.from('documents').delete().eq('id', id).eq('user_id', userId);
+    }
+  },
 
   toggleFavorite: (id) => set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, isFavorite: !d.isFavorite } : d) })),
 
@@ -239,3 +245,41 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   setFocusedBlockId: (id) => set({ focusedBlockId: id }),
 }));
+
+// Auto-save to localStorage on every change
+useAppStore.subscribe((state, prevState) => {
+  if (state.userId && state.documents !== prevState.documents && state.isReady) {
+    saveLocal(state.userId, state.documents);
+  }
+});
+
+// Backup System
+export interface Backup {
+  timestamp: number;
+  documents: Document[];
+}
+
+export const getBackups = (userId: string): Backup[] => {
+  try { return JSON.parse(localStorage.getItem(`tw_backup_${userId}`) || '[]'); }
+  catch { return []; }
+};
+
+export const createBackup = (userId: string, documents: Document[]) => {
+  const backups = getBackups(userId);
+  // Prevent backup if the latest one is exactly the same
+  if (backups.length > 0 && JSON.stringify(backups[0].documents) === JSON.stringify(documents)) return;
+  
+  const newBackup = { timestamp: Date.now(), documents };
+  // Keep last 10 backups
+  const updated = [newBackup, ...backups].slice(0, 10);
+  localStorage.setItem(`tw_backup_${userId}`, JSON.stringify(updated));
+};
+
+export const restoreBackup = (userId: string, timestamp: number) => {
+  const backups = getBackups(userId);
+  const target = backups.find(b => b.timestamp === timestamp);
+  if (target) {
+    useAppStore.setState({ documents: target.documents });
+    target.documents.forEach(d => useAppStore.getState().markDirty(d.id));
+  }
+};

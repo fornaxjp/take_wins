@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useAppStore } from './store/useAppStore';
+import { useAppStore, createBackup } from './store/useAppStore';
 import Editor from './components/Editor';
 import { Sidebar } from './components/Sidebar';
 import { Auth } from './components/Auth';
@@ -76,7 +76,9 @@ function App() {
 
   useEffect(() => {
     if (!session || !activeDocumentId) return;
-    const interval = setInterval(async () => {
+    
+    // 5秒ごとのSupabase同期
+    const syncInterval = setInterval(async () => {
       const store = useAppStore.getState();
       if (store._dirtyDocIds.size > 0 && !isSyncingRef.current) {
         isSyncingRef.current = true;
@@ -84,7 +86,19 @@ function App() {
         finally { setTimeout(() => { isSyncingRef.current = false; }, 500); }
       }
     }, 5000);
-    return () => clearInterval(interval);
+
+    // 5分ごとのローカルバックアップ
+    const backupInterval = setInterval(() => {
+      const store = useAppStore.getState();
+      if (store.userId && store.documents.length > 0) {
+        createBackup(store.userId, store.documents);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => {
+      clearInterval(syncInterval);
+      clearInterval(backupInterval);
+    };
   }, [activeDocumentId, session]);
 
   if (session === undefined) return <div className="loading-spinner" />;

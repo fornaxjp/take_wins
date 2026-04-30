@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings, LayoutTemplate } from 'lucide-react';
+import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings, LayoutTemplate, History } from 'lucide-react';
 import type { Document } from '../types';
 import { TemplateModal } from './TemplateModal';
+import { BackupModal } from './BackupModal';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -20,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,6 +172,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--menu-border)', padding: '12px' }}>
+          <div className="sidebar-item" onClick={() => setIsBackupModalOpen(true)}>
+            <History size={18} className="sidebar-icon" />
+            <span className="sidebar-item-title">履歴と復元</span>
+          </div>
           <div className="sidebar-item" onClick={() => { setSettingsModalOpen(true); if (onClose) onClose(); }}>
             <Settings size={18} className="sidebar-icon" />
             <span className="sidebar-item-title">設定とアカウント管理</span>
@@ -177,6 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
       {isTemplateModalOpen && <TemplateModal onClose={() => setIsTemplateModalOpen(false)} />}
+      {isBackupModalOpen && <BackupModal onClose={() => setIsBackupModalOpen(false)} />}
     </>
   );
 };
