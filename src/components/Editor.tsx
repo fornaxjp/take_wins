@@ -4,7 +4,8 @@ import { Block } from './Block';
 import { Tag, CircleDashed } from 'lucide-react';
 
 export const Editor: React.FC = () => {
-  const { documents, activeDocumentId, addBlock, updateDocumentTitle, selectDocument, updateDocumentProperties } = useAppStore();
+  const { documents, activeDocumentId, addBlock, updateDocumentTitle, selectDocument, updateDocumentProperties, updateBlockData, createDocument } = useAppStore();
+  const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
 
   const doc = documents.find(d => d.id === activeDocumentId);
 
@@ -16,8 +17,13 @@ export const Editor: React.FC = () => {
 
   if (!doc) {
     return (
-      <div className="editor-empty">
-        ドキュメントがありません。左のメニューから作成してください。
+      <div className="editor-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--placeholder-color)' }}>
+        <div style={{ fontSize: 64, marginBottom: 24, opacity: 0.8 }}>📄</div>
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-color)', marginBottom: 8 }}>ドキュメントがありません</h2>
+        <p style={{ fontSize: 16, marginBottom: 32 }}>左のメニューから新しいドキュメントを作成するか、テンプレートを選択してください。</p>
+        <button className="btn-primary" onClick={() => createDocument(null)}>
+          ＋ 新しいドキュメントを作成
+        </button>
       </div>
     );
   }
@@ -48,6 +54,15 @@ export const Editor: React.FC = () => {
     updateDocumentProperties(doc.id, { tags: props.tags.filter(t => t !== tag) });
   };
 
+  const generateAISummary = () => {
+    setIsGeneratingAI(true);
+    setTimeout(() => {
+      const summaryText = "【AI サマリー】\nこのドキュメントは " + doc.blocks.length + " 個のブロックで構成されています。重要なポイントとして、タグ「" + (props.tags.join(', ') || 'なし') + "」が設定されています。全体の進捗状況は「" + (props.status || '未設定') + "」です。";
+      addBlock(doc.blocks[doc.blocks.length - 1]?.id || '', summaryText, 'quote');
+      setIsGeneratingAI(false);
+    }, 1500);
+  };
+
   return (
     <div className="editor-container" onClick={handleContainerClick}>
       <div className="editor-page">
@@ -57,6 +72,10 @@ export const Editor: React.FC = () => {
           onChange={(e) => updateDocumentTitle(doc.id, e.target.value)}
           placeholder="無題のドキュメント"
         />
+
+        <div style={{ fontSize: 13, color: 'var(--placeholder-color)', marginBottom: 24, marginTop: -16, fontWeight: 500 }}>
+          最終更新: {new Date(doc.updatedAt).toLocaleString('ja-JP')}
+        </div>
 
         <div className="editor-properties">
           <div className="property-row">
@@ -93,7 +112,7 @@ export const Editor: React.FC = () => {
               <span>タグ</span>
             </div>
             <div className="property-value" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {props.tags.map(tag => (
+              {props.tags.map((tag: string) => (
                 <span key={tag} className="property-tag">
                   {tag}
                   <button onClick={() => removeTag(tag)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center' }}>×</button>
@@ -122,9 +141,41 @@ export const Editor: React.FC = () => {
         </div>
 
         <div className="editor-blocks" style={{ marginTop: 20 }}>
-          {doc.blocks.map((block) => (
-            <Block key={block.id} block={block} />
-          ))}
+          {doc.blocks.length === 0 ? (
+            <div className="empty-block-placeholder" onClick={() => addBlock(doc.id, '', 'text')} style={{ color: 'var(--placeholder-color)', cursor: 'text', padding: '12px 0' }}>
+               ここをクリックして入力を開始するか、'/' でコマンドを開く
+            </div>
+          ) : (
+            doc.blocks.map((block) => (
+              <Block key={block.id} block={block} />
+            ))
+          )}
+        </div>
+
+        <div style={{ marginTop: 60, paddingBottom: 60, borderTop: '1px dashed var(--menu-border)', paddingTop: 24, textAlign: 'center' }}>
+          <button 
+            onClick={generateAISummary}
+            disabled={isGeneratingAI || doc.blocks.length < 2}
+            style={{
+              background: 'linear-gradient(135deg, #1a73e8, #ea4335)',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '24px',
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: (isGeneratingAI || doc.blocks.length < 2) ? 'not-allowed' : 'pointer',
+              opacity: (isGeneratingAI || doc.blocks.length < 2) ? 0.6 : 1,
+              boxShadow: '0 4px 12px rgba(26,115,232,0.3)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'transform 0.2s'
+            }}
+          >
+            {isGeneratingAI ? '✨ サマリーを生成中...' : '✨ AIでノートをまとめる'}
+          </button>
+          {doc.blocks.length < 2 && <div style={{ fontSize: 12, color: 'var(--placeholder-color)', marginTop: 8 }}>※内容が少ないためAIを使用できません</div>}
         </div>
       </div>
     </div>

@@ -88,7 +88,10 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
       if (block.type !== 'text') {
         updateBlockType(block.id, 'text');
       } else {
-        removeBlock(block.id);
+        const doc = useAppStore.getState().documents.find(d => d.id === useAppStore.getState().activeDocumentId);
+        if (doc && doc.blocks.length > 1) {
+          removeBlock(block.id);
+        }
       }
     }
   };

@@ -132,14 +132,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div style={{ display: 'flex', gap: 8, padding: '0 12px' }}>
-          <button onClick={() => createDocument(null)} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 20px', padding: '10px' }}>
+          <button onClick={() => createDocument(null)} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 8px', padding: '10px' }}>
             <Plus size={20} className="icon-blue" />
             <span>作成</span>
           </button>
-          <button onClick={createFolder} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 20px', padding: '10px' }}>
+          <button onClick={createFolder} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 8px', padding: '10px' }}>
             <span style={{ fontSize: 16 }}>📁</span>
             <span>フォルダ</span>
           </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 6, padding: '0 12px 16px', overflowX: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+          <button onClick={() => useAppStore.getState().createTemplateDocument('password')} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--placeholder-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔑 パスワード管理</button>
+          <button onClick={() => useAppStore.getState().createTemplateDocument('account')} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--placeholder-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🏦 アカウント管理</button>
+          <button onClick={() => useAppStore.getState().createTemplateDocument('meeting')} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--placeholder-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>📅 議事録</button>
         </div>
 
         <div className="sidebar-search-container">

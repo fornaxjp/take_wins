@@ -39,6 +39,7 @@ interface AppState {
   markDirty: (docId: string) => void;
   clearDocuments: () => void;
   createDocument: (parentId?: string | null) => void;
+  createTemplateDocument: (type: 'password' | 'account' | 'meeting') => void;
   selectDocument: (id: string) => void;
   deleteDocument: (id: string) => void;
   toggleFavorite: (id: string) => void;
@@ -129,6 +130,39 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   createDocument: (parentId = null) => {
     const newDoc: Document = { id: generateId(), title: '', blocks: [createInitialBlock()], isFavorite: false, createdAt: Date.now(), updatedAt: Date.now(), order: get().documents.length, parentId };
+    set(s => ({ documents: [...s.documents, newDoc], activeDocumentId: newDoc.id }));
+    get()._dirtyDocIds.add(newDoc.id);
+  },
+
+  createTemplateDocument: (type) => {
+    let title = '';
+    let blocks: Block[] = [];
+    if (type === 'password') {
+      title = 'パスワード管理';
+      blocks = [
+        { id: generateId(), type: 'h2', content: 'サービス名' },
+        { id: generateId(), type: 'table', content: '', data: { rows: 2, cols: 3, cells: [['URL', 'ID / Email', 'Password'], ['https://...', '', '']] } }
+      ];
+    } else if (type === 'account') {
+      title = 'アカウント管理';
+      blocks = [
+        { id: generateId(), type: 'h2', content: '銀行・サービス' },
+        { id: generateId(), type: 'bullet_list', content: '口座番号:' },
+        { id: generateId(), type: 'bullet_list', content: '名義:' }
+      ];
+    } else if (type === 'meeting') {
+      title = 'ミーティング議事録';
+      blocks = [
+        { id: generateId(), type: 'h3', content: '日時: ' + new Date().toLocaleDateString() },
+        { id: generateId(), type: 'h3', content: '参加者: ' },
+        { id: generateId(), type: 'divider', content: '' },
+        { id: generateId(), type: 'h2', content: 'アジェンダ' },
+        { id: generateId(), type: 'todo_list', content: '' },
+        { id: generateId(), type: 'h2', content: '決定事項' },
+        { id: generateId(), type: 'bullet_list', content: '' }
+      ];
+    }
+    const newDoc: Document = { id: generateId(), title, blocks, isFavorite: false, createdAt: Date.now(), updatedAt: Date.now(), order: get().documents.length, parentId: null };
     set(s => ({ documents: [...s.documents, newDoc], activeDocumentId: newDoc.id }));
     get()._dirtyDocIds.add(newDoc.id);
   },
