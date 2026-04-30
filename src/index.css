@@ -41,7 +41,8 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--app-font-family, 'Inter', system-ui, -apple-system, sans-serif);
+  font-size: var(--app-font-size, 16px);
   background-color: var(--bg-color);
   color: var(--text-color);
   overflow: hidden;
@@ -452,4 +453,89 @@ button {
   margin-top: 24px;
   font-size: 14px;
   color: var(--danger-color);
+}
+
+/* Block Drag Handle and Wrapper */
+.block-wrapper {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  margin-left: -32px;
+  padding-left: 32px;
+}
+.block-drag-handle {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  opacity: 0;
+  cursor: grab;
+  color: var(--placeholder-color);
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+.block-drag-handle:hover {
+  background: var(--hover-bg);
+}
+.block-wrapper:hover .block-drag-handle {
+  opacity: 1;
+}
+.block-content-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Slash Menu */
+.slash-menu {
+  position: absolute;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-hover);
+  border: 1px solid var(--menu-border);
+  padding: 8px;
+  z-index: 1000;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.slash-menu-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--placeholder-color);
+  padding: 4px 8px 8px;
+  text-transform: uppercase;
+}
+.slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+.slash-menu-item:hover {
+  background: var(--hover-bg);
+}
+.slash-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-color);
+  border: 1px solid var(--menu-border);
+  color: var(--placeholder-color);
 }

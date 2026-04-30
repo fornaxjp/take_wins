@@ -24,11 +24,15 @@ interface AppState {
   isReady: boolean;
   isSettingsModalOpen: boolean;
   theme: 'light' | 'dark';
+  fontFamily: string;
+  fontSize: string;
   _dirtyDocIds: Set<string>;
 
   setUserId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setFontFamily: (font: string) => void;
+  setFontSize: (size: string) => void;
   fetchFromCloud: () => Promise<void>;
   syncToCloud: (docId: string) => Promise<void>;
   syncAllDirty: () => Promise<void>;
@@ -60,6 +64,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   isReady: false,
   isSettingsModalOpen: false,
   theme: (localStorage.getItem('tw_theme') as 'light' | 'dark') || 'light',
+  fontFamily: localStorage.getItem('tw_fontFamily') || "'Inter', system-ui, sans-serif",
+  fontSize: localStorage.getItem('tw_fontSize') || "16px",
   _dirtyDocIds: new Set<string>(),
 
   setUserId: (id) => set({ userId: id }),
@@ -68,6 +74,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ theme });
     localStorage.setItem('tw_theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+  },
+  setFontFamily: (fontFamily) => {
+    set({ fontFamily });
+    localStorage.setItem('tw_fontFamily', fontFamily);
+    document.documentElement.style.setProperty('--app-font-family', fontFamily);
+  },
+  setFontSize: (fontSize) => {
+    set({ fontSize });
+    localStorage.setItem('tw_fontSize', fontSize);
+    document.documentElement.style.setProperty('--app-font-size', fontSize);
   },
   markDirty: (docId) => { get()._dirtyDocIds.add(docId); },
   clearDocuments: () => {

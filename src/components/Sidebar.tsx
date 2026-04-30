@@ -42,20 +42,69 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     return colors[charCodeSum % colors.length];
   };
 
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.stopPropagation();
+    setDraggedId(id);
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedId && draggedId !== targetId) {
+      moveDocument(draggedId, targetId);
+    }
+    setDraggedId(null);
+  };
+
+  const createFolder = () => {
+    const id = Math.random().toString(36).substring(2, 9);
+    useAppStore.setState(s => {
+      const newDoc: Document = { 
+        id, title: '新しいフォルダ', blocks: [], isFavorite: false, 
+        createdAt: Date.now(), updatedAt: Date.now(), order: s.documents.length, parentId: null,
+        properties: { tags: [], status: null, isFolder: true }
+      };
+      s._dirtyDocIds.add(id);
+      return { documents: [...s.documents, newDoc] };
+    });
+  };
+
   const renderItem = (doc: Document, depth: number) => {
     const isExpanded = expanded[doc.id] || false;
     const hasChildren = documents.some(d => d.parentId === doc.id);
+    const isFolder = doc.properties?.isFolder;
+    
     return (
-      <div key={doc.id}>
+      <div key={doc.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, doc.id)}
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, doc.id)}
+      >
         <div className={`sidebar-item ${activeDocumentId === doc.id ? 'active' : ''}`} style={{ paddingLeft: `${16 + depth * 12}px` }}
-          onClick={() => { selectDocument(doc.id); if (window.innerWidth <= 768 && onClose) onClose(); }}>
+          onClick={(e) => { 
+            e.stopPropagation();
+            if (isFolder) { toggleExpand(doc.id, e); }
+            else { selectDocument(doc.id); if (window.innerWidth <= 768 && onClose) onClose(); }
+          }}>
           <div className="sidebar-expand-icon" onClick={(e) => { e.stopPropagation(); toggleExpand(doc.id, e); }}>
-            {hasChildren ? (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}
+            {(hasChildren || isFolder) ? (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}
           </div>
-          <FileText size={18} className={`sidebar-icon ${getIconColorClass(doc.id)}`} />
-          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title || '無題のドキュメント'}</span>
+          {isFolder ? (
+            <div style={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--placeholder-color)' }}>📁</div>
+          ) : (
+            <FileText size={18} className={`sidebar-icon ${getIconColorClass(doc.id)}`} />
+          )}
+          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title || (isFolder ? '新しいフォルダ' : '無題のドキュメント')}</span>
           <div className="sidebar-item-actions">
-            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(doc.id); }}><Star size={14} fill={doc.isFavorite ? "currentColor" : "none"} className={doc.isFavorite ? 'icon-yellow' : ''} /></button>
+            {!isFolder && <button onClick={(e) => { e.stopPropagation(); toggleFavorite(doc.id); }}><Star size={14} fill={doc.isFavorite ? "currentColor" : "none"} className={doc.isFavorite ? 'icon-yellow' : ''} /></button>}
+            {isFolder && <button onClick={(e) => { e.stopPropagation(); createDocument(doc.id); setExpanded(p => ({...p, [doc.id]: true})); }}><Plus size={14} /></button>}
             <button onClick={(e) => { e.stopPropagation(); deleteDocument(doc.id); }}><Trash2 size={14} /></button>
           </div>
         </div>
@@ -85,21 +134,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <button onClick={() => createDocument(null)} className="sidebar-new-btn-google">
-          <Plus size={24} className="icon-blue" />
-          <span>作成</span>
-        </button>
+        <div style={{ display: 'flex', gap: 8, padding: '0 12px' }}>
+          <button onClick={() => createDocument(null)} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 20px', padding: '10px' }}>
+            <Plus size={20} className="icon-blue" />
+            <span>作成</span>
+          </button>
+          <button onClick={createFolder} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 20px', padding: '10px' }}>
+            <span style={{ fontSize: 16 }}>📁</span>
+            <span>フォルダ</span>
+          </button>
+        </div>
 
         <div className="sidebar-search-container">
           <Search size={18} className="sidebar-search-icon" />
           <input type="text" placeholder="マイドキュメントを検索" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, null)}>
           <div className="sidebar-section-title">お気に入り</div>
           {favorites.length > 0 ? favorites.map(doc => renderItem(doc, 0)) : <div style={{ padding: '8px 24px', fontSize: 12, opacity: 0.5 }}>お気に入りはまだありません</div>}
           
-          <div className="sidebar-section-title">プライベート</div>
+          <div className="sidebar-section-title">マイドライブ</div>
           {renderDocTree(null, 0)}
         </div>
       </div>

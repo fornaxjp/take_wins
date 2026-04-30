@@ -14,7 +14,7 @@ function App() {
     selectDocument, activeDocumentId, documents,
     syncAllDirty, setUserId, fetchFromCloud,
     clearDocuments, isReady, isSettingsModalOpen, setSettingsModalOpen,
-    theme
+    theme, fontFamily, fontSize
   } = useAppStore();
 
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -24,10 +24,12 @@ function App() {
   const loadedUidRef = useRef<string | null>(null);
   const isSyncingRef = useRef(false);
 
-  // Apply theme to HTML element
+  // Apply theme and fonts to HTML element
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    document.documentElement.style.setProperty('--app-font-family', fontFamily);
+    document.documentElement.style.setProperty('--app-font-size', fontSize);
+  }, [theme, fontFamily, fontSize]);
 
   const handleSync = useCallback(async () => {
     if (isSyncingRef.current) return;
