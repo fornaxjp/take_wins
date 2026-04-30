@@ -112,13 +112,19 @@ body {
 
 .sidebar-search-container input {
   width: 100%;
-  padding: 10px 16px 10px 44px;
-  border-radius: 24px;
+  padding: 8px 12px 8px 36px;
+  border-radius: 0;
   border: none;
-  background: var(--hover-bg);
+  border-bottom: 1px solid var(--menu-border);
+  background: transparent;
   color: var(--text-color);
   font-size: 14px;
   outline: none;
+  transition: border-color 0.2s;
+}
+
+.sidebar-search-container input:focus {
+  border-bottom-color: var(--google-blue);
 }
 
 .sidebar-search-icon {
@@ -406,18 +412,18 @@ button {
 }
 
 .auth-form input {
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid var(--menu-border);
+  padding: 12px 0;
+  border: none;
+  border-bottom: 2px solid var(--menu-border);
   background: transparent;
   color: var(--text-color);
   font-size: 16px;
   outline: none;
+  transition: border-color 0.3s;
 }
 
 .auth-form input:focus {
-  border-color: var(--google-blue);
-  box-shadow: 0 0 0 1px var(--google-blue);
+  border-bottom-color: var(--google-blue);
 }
 
 .auth-submit-btn {

@@ -105,13 +105,17 @@ export const Editor: React.FC = () => {
                 onKeyDown={handleAddTag} 
                 style={{ 
                   background: 'transparent', 
-                  border: '1px dashed var(--menu-border)', 
-                  padding: '4px 12px', 
-                  borderRadius: '16px', 
-                  fontSize: '12px',
-                  color: 'var(--placeholder-color)',
-                  outline: 'none'
+                  border: 'none',
+                  borderBottom: '1px solid transparent',
+                  padding: '4px 0', 
+                  fontSize: '13px',
+                  color: 'var(--text-color)',
+                  outline: 'none',
+                  width: '120px',
+                  transition: 'border-color 0.2s'
                 }} 
+                onFocus={(e) => e.target.style.borderBottomColor = 'var(--google-blue)'}
+                onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
               />
             </div>
           </div>

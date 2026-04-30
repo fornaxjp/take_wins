@@ -234,7 +234,7 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onFocus={() => setFocusedBlockId(block.id)}
-            className={`block-input ${block.data?.checked ? 'todo-checked' : ''}`}
+            className={`block-content ${block.data?.checked ? 'todo-checked' : ''}`}
             placeholder={placeholder}
             rows={1}
             spellCheck={false}
