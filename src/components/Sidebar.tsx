@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search } from 'lucide-react';
+import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings } from 'lucide-react';
 import type { Document } from '../types';
 
 interface SidebarProps {
@@ -129,9 +129,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <span>Take wins</span>
           </div>
-          <button onClick={() => { setSettingsModalOpen(true); if (onClose) onClose(); }} style={{ background: 'transparent', border: 'none', color: 'var(--placeholder-color)', cursor: 'pointer' }}>
-            <Search size={20} />
-          </button>
         </div>
 
         <div style={{ display: 'flex', gap: 8, padding: '0 12px' }}>
@@ -156,6 +153,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           
           <div className="sidebar-section-title">マイドライブ</div>
           {renderDocTree(null, 0)}
+        </div>
+
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--menu-border)', padding: '12px' }}>
+          <div className="sidebar-item" onClick={() => { setSettingsModalOpen(true); if (onClose) onClose(); }}>
+            <Settings size={18} className="sidebar-icon" />
+            <span className="sidebar-item-title">設定とアカウント管理</span>
+          </div>
         </div>
       </div>
     </>
