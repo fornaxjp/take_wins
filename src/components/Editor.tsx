@@ -57,10 +57,22 @@ export const Editor: React.FC = () => {
   const generateAISummary = () => {
     setIsGeneratingAI(true);
     setTimeout(() => {
-      const summaryText = "【AI サマリー】\nこのドキュメントは " + doc.blocks.length + " 個のブロックで構成されています。重要なポイントとして、タグ「" + (props.tags.join(', ') || 'なし') + "」が設定されています。全体の進捗状況は「" + (props.status || '未設定') + "」です。";
+      const allText = doc.blocks
+        .filter(b => b.type !== 'table' && b.type !== 'divider')
+        .map(b => b.content)
+        .join(' ');
+      
+      let summaryText = '【AI サマリー】\n';
+      if (allText.trim().length === 0) {
+        summaryText += 'ドキュメントに内容がありません。';
+      } else {
+        const excerpt = allText.substring(0, 150).replace(/\n/g, ' ');
+        summaryText += `このドキュメントでは、「${excerpt}...」といった内容が記載されています。\n\n要点として、タグ「${props.tags.join(', ') || 'なし'}」が関連付けられており、現在のステータスは「${props.status || '未設定'}」です。`;
+      }
+
       addBlock(doc.blocks[doc.blocks.length - 1]?.id || '', summaryText, 'quote');
       setIsGeneratingAI(false);
-    }, 1500);
+    }, 2000);
   };
 
   return (

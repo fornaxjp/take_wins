@@ -714,3 +714,74 @@ button {
   25% { transform: translateX(-10px); }
   75% { transform: translateX(10px); }
 }
+
+/* Bullet and Todo */
+.bullet-dot {
+  margin-right: 12px;
+  margin-top: 6px;
+  color: var(--text-color);
+  font-size: 18px;
+  line-height: 1;
+}
+.todo-checkbox {
+  margin-right: 12px;
+  margin-top: 8px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--google-blue);
+}
+.todo-checked {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* Table Styles */
+.block-table-wrapper {
+  margin: 12px 0;
+  width: 100%;
+  overflow-x: auto;
+}
+.block-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.block-table td {
+  border-bottom: 1px solid var(--menu-border);
+  padding: 0;
+  min-width: 120px;
+}
+.block-table input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text-color);
+  outline: none;
+}
+.block-table input:focus {
+  background: var(--active-bg);
+}
+.block-table-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.block-table-actions button {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--menu-border);
+  background: transparent;
+  color: var(--placeholder-color);
+  cursor: pointer;
+}
+.block-table-actions button:hover {
+  background: var(--hover-bg);
+  color: var(--text-color);
+}
+.block-table-actions button.danger:hover {
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+}
