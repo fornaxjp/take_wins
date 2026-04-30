@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings } from 'lucide-react';
+import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings, LayoutTemplate } from 'lucide-react';
 import type { Document } from '../types';
+import { TemplateModal } from './TemplateModal';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -18,6 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -142,10 +144,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 6, padding: '0 12px 16px', overflowX: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-          <button onClick={() => useAppStore.getState().createTemplateDocument('password')} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--placeholder-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔑 パスワード管理</button>
-          <button onClick={() => useAppStore.getState().createTemplateDocument('account')} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--placeholder-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🏦 アカウント管理</button>
-          <button onClick={() => useAppStore.getState().createTemplateDocument('meeting')} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--placeholder-color)', cursor: 'pointer', whiteSpace: 'nowrap' }}>📅 議事録</button>
+        <div style={{ padding: '0 12px 16px' }}>
+          <button 
+            onClick={() => setIsTemplateModalOpen(true)} 
+            style={{ width: '100%', padding: '10px', borderRadius: 20, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 600, transition: 'background 0.2s' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <LayoutTemplate size={16} className="icon-yellow" />
+            テンプレートから作成
+          </button>
         </div>
 
         <div className="sidebar-search-container">
@@ -168,6 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
       </div>
+      {isTemplateModalOpen && <TemplateModal onClose={() => setIsTemplateModalOpen(false)} />}
     </>
   );
 };

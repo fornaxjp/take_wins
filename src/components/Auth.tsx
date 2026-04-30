@@ -17,7 +17,13 @@ export const Auth: React.FC = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage(error.message);
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
+      });
       if (error) setMessage(error.message);
       else setMessage('確認メールを送りました。メール内のリンクをクリックして本登録を完了してください。');
     }
