@@ -81,9 +81,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   };
 
   const renderItem = (doc: Document, depth: number) => {
+    const props = {
+      tags: Array.isArray(doc.properties?.tags) ? doc.properties.tags : [],
+      status: doc.properties?.status || '',
+      priority: doc.properties?.priority || 0,
+      isLocked: !!doc.properties?.isLocked,
+      isFolder: !!doc.properties?.isFolder,
+    };
     const isExpanded = expanded[doc.id] || false;
     const hasChildren = documents.some(d => d.parentId === doc.id);
-    const isFolder = doc.properties?.isFolder;
+    const isFolder = props.isFolder;
     
     return (
       <div key={doc.id}
@@ -95,8 +102,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className={`sidebar-item ${activeDocumentId === doc.id ? 'active' : ''}`} style={{ paddingLeft: `${16 + depth * 12}px` }}
           onClick={(e) => { 
             e.stopPropagation();
-            if (isFolder) { toggleExpand(doc.id, e); }
-            else { selectDocument(doc.id); if (window.innerWidth <= 768 && onClose) onClose(); }
+            if (isFolder) { 
+              toggleExpand(doc.id, e); 
+            } else { 
+              selectDocument(doc.id); 
+              if (window.innerWidth <= 768 && onClose) onClose(); 
+            }
           }}>
           <div className="sidebar-expand-icon" onClick={(e) => { e.stopPropagation(); toggleExpand(doc.id, e); }}>
             {(hasChildren || isFolder) ? (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}

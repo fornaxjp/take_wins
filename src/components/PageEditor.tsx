@@ -35,11 +35,11 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
   }
 
   const props = {
-    tags: doc.properties?.tags || [],
+    tags: Array.isArray(doc.properties?.tags) ? doc.properties.tags : [],
     status: doc.properties?.status || '',
     priority: doc.properties?.priority || 0,
-    isLocked: doc.properties?.isLocked || false,
-    isFolder: doc.properties?.isFolder || false,
+    isLocked: !!doc.properties?.isLocked,
+    isFolder: !!doc.properties?.isFolder,
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
