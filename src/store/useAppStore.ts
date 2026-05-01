@@ -105,7 +105,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   clearDocuments: async () => {
     await db.documents.clear();
     await db.syncMetadata.clear();
-    set({ documents: [], activeDocumentId: null, focusedBlockId: null, userId: null, isReady: false, _dirtyDocIds: new Set() });
+        set({ documents: [], activeDocumentId: null, focusedBlockId: null, userId: null, isReady: true, _dirtyDocIds: new Set() });
   },
 
   initializeLocalData: async () => {
