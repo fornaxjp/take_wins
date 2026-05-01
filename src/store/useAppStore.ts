@@ -1,3 +1,4 @@
+import { create } from 'zustand';
 import { db } from '../lib/db';
 
 // Sync status type
