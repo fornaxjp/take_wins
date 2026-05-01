@@ -12,15 +12,15 @@ import { Menu, RefreshCw } from 'lucide-react';
 function App() {
   const {
     selectDocument, activeDocumentId, documents,
-    syncAllDirty, setUserId, fetchFromCloud,
+    syncWithCloud, setUserId, fetchFromCloud, initializeLocalData,
     clearDocuments, isReady, isSettingsModalOpen, setSettingsModalOpen,
-    theme, fontFamily, fontSize
+    theme, fontFamily, fontSize, syncStatus
   } = useAppStore();
 
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'idle'|'syncing'|'done'|'error'>('idle');
+
   const loadedUidRef = useRef<string | null>(null);
   const isSyncingRef = useRef(false);
 
@@ -34,27 +34,28 @@ function App() {
   const handleSync = useCallback(async () => {
     if (isSyncingRef.current) return;
     isSyncingRef.current = true;
-    setSyncStatus('syncing');
     try {
-      await syncAllDirty();
-      await fetchFromCloud();
-      setSyncStatus('done');
-      setTimeout(() => setSyncStatus('idle'), 2000);
+      await syncWithCloud();
     } catch {
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 3000);
+      // Error handled in store
     } finally {
       isSyncingRef.current = false;
     }
-  }, [syncAllDirty, fetchFromCloud]);
+  }, [syncWithCloud]);
 
   useEffect(() => {
+    // 1. Initialize local data first
+    initializeLocalData().then(() => {
+      if (getAppLockSettings().enabled) setIsAppLocked(true);
+    });
+
+    // 2. Auth listener
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session && session.user.id !== loadedUidRef.current) {
         loadedUidRef.current = session.user.id;
         setUserId(session.user.id);
-        fetchFromCloud().then(() => { if (getAppLockSettings().enabled) setIsAppLocked(true); });
+        fetchFromCloud();
       } else if (!session) { setSession(null); }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -77,12 +78,12 @@ function App() {
   useEffect(() => {
     if (!session || !activeDocumentId) return;
     
-    // 5秒ごとのSupabase同期
+    // 5秒ごとの同期 (Push dirty + Pull remote)
     const syncInterval = setInterval(async () => {
       const store = useAppStore.getState();
-      if (store._dirtyDocIds.size > 0 && !isSyncingRef.current) {
+      if (!isSyncingRef.current) {
         isSyncingRef.current = true;
-        try { await store.syncAllDirty(); } catch (e) { console.error(e); }
+        try { await store.syncWithCloud(); } catch (e) { console.error(e); }
         finally { setTimeout(() => { isSyncingRef.current = false; }, 500); }
       }
     }, 5000);
@@ -111,7 +112,7 @@ function App() {
   }
 
   const activeTitle = documents.find(d => d.id === activeDocumentId)?.title;
-  const syncIcon = syncStatus === 'syncing' ? '⏳' : syncStatus === 'done' ? '✓' : syncStatus === 'error' ? '✗' : '';
+  const syncIcon = syncStatus === 'syncing' ? '⏳' : syncStatus === 'done' ? '✓' : syncStatus === 'error' ? '✗' : syncStatus === 'offline' ? '📡' : '';
 
   return (
     <div className="app-container">
@@ -121,7 +122,7 @@ function App() {
           <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-btn"><Menu size={22} /></button>
           <div className="mobile-header-center">
             <span className="mobile-header-title">{activeTitle || 'Take wins'}</span>
-            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.0.4</span>
+            <span style={{ fontSize: '9px', opacity: 0.4, display: 'block' }}>v2.1.0-localfirst</span>
           </div>
           <button onClick={handleSync} className="mobile-menu-btn" style={{ position: 'relative' }}>
             {syncStatus === 'syncing' ? <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <span style={{ fontSize: 16 }}>{syncIcon || <RefreshCw size={18} />}</span>}

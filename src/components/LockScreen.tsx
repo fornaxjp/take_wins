@@ -26,6 +26,18 @@ export const LockScreen: React.FC<LockScreenProps> = ({ title, pinHash, biometri
     }
   }, [hasBiometric]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleDigit(e.key);
+      } else if (e.key === 'Backspace') {
+        setPin(p => p.slice(0, -1));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pin]);
+
   const handleDigit = async (d: string) => {
     if (pin.length >= 4) return;
     const next = pin + d;

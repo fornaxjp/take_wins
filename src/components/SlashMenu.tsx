@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Type, Heading1, Heading2, Heading3, List, CheckSquare, Quote, Minus, Code, Table as TableIcon } from 'lucide-react';
+import { Type, Heading1, Heading2, Heading3, List, CheckSquare, Quote, Minus, Code, Table as TableIcon, Globe, Sparkles } from 'lucide-react';
 import type { BlockType } from '../types';
 
 interface SlashMenuProps {
@@ -31,8 +31,10 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose })
     { type: 'todo_list', label: 'ToDo リスト', icon: <CheckSquare size={14} /> },
     { type: 'quote', label: '引用', icon: <Quote size={14} /> },
     { type: 'divider', label: '区切り線', icon: <Minus size={14} /> },
-    { type: 'code', label: 'コード', icon: <Code size={14} /> },
+    { type: 'code', label: '実行可能コード', icon: <Code size={14} /> },
     { type: 'table', label: 'テーブル', icon: <TableIcon size={14} /> },
+    { type: 'live_data', label: 'ライブデータ (株価等)', icon: <Globe size={14} /> },
+    { type: 'ai_assistant', label: 'AI アシスタント', icon: <Sparkles size={14} /> },
   ];
 
   return (

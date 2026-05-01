@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings, LayoutTemplate, History } from 'lucide-react';
+import { getAppLockSettings } from '../lib/supabase';
+import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settings, LayoutTemplate, History, Lock, Unlock, Columns } from 'lucide-react';
 import type { Document } from '../types';
 import { TemplateModal } from './TemplateModal';
 import { BackupModal } from './BackupModal';
@@ -14,7 +15,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { 
     documents, activeDocumentId, createDocument, selectDocument, 
     deleteDocument, toggleFavorite, setSortType, sortType, moveDocument,
-    setSettingsModalOpen
+    setSettingsModalOpen, toggleDocumentLock, setSideDocument, sideDocumentId
   } = useAppStore();
   
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -107,6 +108,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           )}
           <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title || (isFolder ? '新しいフォルダ' : '無題のドキュメント')}</span>
           <div className="sidebar-item-actions">
+            {!isFolder && <button onClick={(e) => { 
+              e.stopPropagation(); 
+              if (!doc.properties?.isLocked && !getAppLockSettings().enabled) {
+                alert('ファイルにロックをかけるには、先に「設定」からアプリロック（PIN）を有効にしてください。');
+                return;
+              }
+              toggleDocumentLock(doc.id); 
+            }}>{doc.properties?.isLocked ? <Lock size={14} className="icon-red" /> : <Unlock size={14} />}</button>}
+            {!isFolder && <button 
+              className={sideDocumentId === doc.id ? 'active' : ''}
+              onClick={(e) => { e.stopPropagation(); setSideDocument(sideDocumentId === doc.id ? null : doc.id); }}
+              title="サイドパネルで開く"
+            >
+              <Columns size={14} className={sideDocumentId === doc.id ? 'icon-blue' : ''} />
+            </button>}
             {!isFolder && <button onClick={(e) => { e.stopPropagation(); toggleFavorite(doc.id); }}><Star size={14} fill={doc.isFavorite ? "currentColor" : "none"} className={doc.isFavorite ? 'icon-yellow' : ''} /></button>}
             {isFolder && <button onClick={(e) => { e.stopPropagation(); createDocument(doc.id); setExpanded(p => ({...p, [doc.id]: true})); }}><Plus size={14} /></button>}
             <button onClick={(e) => { e.stopPropagation(); deleteDocument(doc.id); }}><Trash2 size={14} /></button>
@@ -118,7 +134,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   };
 
   const renderDocTree = (parentId: string | null, depth: number = 0) => {
-    return displayDocs.filter(d => d.parentId === parentId).map(doc => renderItem(doc, depth));
+    const children = displayDocs.filter(d => d.parentId === parentId);
+    if (children.length === 0 && parentId !== null) {
+      return <div style={{ padding: '4px 12px 4px ' + (36 + depth * 12) + 'px', fontSize: 11, opacity: 0.4, fontStyle: 'italic' }}>フォルダは空です</div>;
+    }
+    return children.map(doc => renderItem(doc, depth));
   };
 
   return (
@@ -159,8 +179,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className="sidebar-search-container">
-          <Search size={18} className="sidebar-search-icon" />
-          <input type="text" placeholder="マイドキュメントを検索" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <label htmlFor="sidebar-search" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <Search size={18} className="sidebar-search-icon" />
+          </label>
+          <input id="sidebar-search" type="text" placeholder="マイドキュメントを検索" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, null)}>

@@ -1,10 +1,25 @@
-export type BlockType = 'text' | 'h1' | 'h2' | 'h3' | 'bullet_list' | 'todo_list' | 'quote' | 'divider' | 'code' | 'table';
+export type BlockType = 'text' | 'h1' | 'h2' | 'h3' | 'bullet_list' | 'todo_list' | 'quote' | 'divider' | 'code' | 'table' | 'live_data' | 'ai_assistant';
 
 export interface Block {
   id: string;
   type: BlockType;
   content: string;
   data?: any;
+  language?: string;
+  executionResult?: {
+    output: string;
+    error?: string;
+    type: 'text' | 'html' | 'image';
+  };
+  timer?: {
+    startTime: number | null;
+    elapsed: number;
+    isRunning: boolean;
+  };
+  blocker?: {
+    reason: string;
+    isBlocked: boolean;
+  };
 }
 
 export interface Document {
@@ -18,6 +33,9 @@ export interface Document {
   parentId: string | null;
   properties?: {
     tags: string[];
-    status: 'Not Started' | 'In Progress' | 'Done' | null;
+    status: string | null;
+    isFolder?: boolean;
+    isLocked?: boolean;
+    priority?: number;
   };
 }

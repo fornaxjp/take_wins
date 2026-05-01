@@ -8,7 +8,21 @@ import { Moon, Sun } from 'lucide-react';
 export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { clearDocuments, setSettingsModalOpen, theme, setTheme, fontFamily, fontSize, setFontFamily, setFontSize } = useAppStore();
   const [email, setEmail] = useState('');
-  const [activeTab, setActiveTab] = useState<'account'|'applock'>('account');
+  const [activeTab, setActiveTab] = useState<'account'|'applock'|'ai'>('account');
+  const [aiKeys, setAiKeys] = useState({ openai: '', gemini: '', claude: '' });
+  const [aiModel, setAiModel] = useState('openai');
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('tw_ai_keys') || '{}');
+    setAiKeys(saved);
+    setAiModel(localStorage.getItem('tw_ai_model') || 'openai');
+  }, []);
+
+  const saveAiSettings = () => {
+    localStorage.setItem('tw_ai_keys', JSON.stringify(aiKeys));
+    localStorage.setItem('tw_ai_model', aiModel);
+    alert('AI設定を保存しました');
+  };
 
   const [dbStatus, setDbStatus] = useState<'testing'|'ok'|'error'|null>(null);
   const [dbError, setDbError] = useState('');
@@ -128,7 +142,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         </div>
         
         <div style={{ display: 'flex', gap: 4, marginBottom: 32, background: 'var(--hover-bg)', padding: 4, borderRadius: 16 }}>
-          {(['account','applock'] as const).map(tab => (
+          {(['account','applock', 'ai'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               style={{ 
                 flex: 1, 
@@ -136,13 +150,13 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 borderRadius: 12, 
                 border: 'none', 
                 background: activeTab === tab ? 'var(--bg-color)' : 'transparent', 
-                color: activeTab === tab ? 'var(--google-blue)' : 'var(--placeholder-color)', 
+                color: activeTab === tab ? (tab === 'ai' ? 'var(--google-yellow)' : 'var(--google-blue)') : 'var(--placeholder-color)', 
                 fontWeight: 600, 
                 fontSize: 14,
                 cursor: 'pointer',
                 boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
               }}>
-              {tab === 'account' ? '基本設定' : 'ロック'}
+              {tab === 'account' ? '基本' : tab === 'applock' ? 'ロック' : 'AI'}
             </button>
           ))}
         </div>
@@ -256,6 +270,39 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               </>
             )}
             <button onClick={() => { setSettingsModalOpen(false); setPinStep('idle'); setNewPin(''); setConfirmPin(''); }} style={{ width: '100%', padding: '14px', background: 'var(--hover-bg)', color: 'var(--text-color)', border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer', marginTop: 'auto' }}>閉じる</button>
+          </div>
+        )}
+
+        {activeTab === 'ai' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>使用モデル</div>
+              <select value={aiModel} onChange={(e) => setAiModel(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: 'var(--hover-bg)', color: 'var(--text-color)', outline: 'none' }}>
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="gemini">Gemini (1.5 Pro)</option>
+                <option value="claude">Claude (3.5 Sonnet)</option>
+              </select>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>OpenAI API Key</div>
+              <input type="password" value={aiKeys.openai} onChange={(e) => setAiKeys({...aiKeys, openai: e.target.value})} placeholder="sk-..." style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', outline: 'none' }} />
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>Gemini API Key</div>
+              <input type="password" value={aiKeys.gemini} onChange={(e) => setAiKeys({...aiKeys, gemini: e.target.value})} placeholder="AIza..." style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', outline: 'none' }} />
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>Claude API Key</div>
+              <input type="password" value={aiKeys.claude} onChange={(e) => setAiKeys({...aiKeys, claude: e.target.value})} placeholder="sk-ant-..." style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', outline: 'none' }} />
+            </div>
+
+            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button onClick={saveAiSettings} style={{ width: '100%', padding: '14px', background: 'var(--google-yellow)', color: 'white', border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer' }}>保存して適用</button>
+              <button onClick={() => setSettingsModalOpen(false)} style={{ width: '100%', padding: '14px', background: 'var(--hover-bg)', color: 'var(--text-color)', border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer' }}>閉じる</button>
+            </div>
           </div>
         )}
       </div>

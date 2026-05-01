@@ -1,20 +1,43 @@
 import React, { useRef, useEffect, useState } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Play, Terminal, RefreshCw, Send, Sparkles, Globe, Timer as TimerIcon, OctagonAlert } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import type { Block as BlockTypeInterface } from '../types';
 import { SlashMenu } from './SlashMenu';
+import { useNotification } from './NotificationProvider';
 
 interface BlockProps {
   block: BlockTypeInterface;
 }
 
 export const Block: React.FC<BlockProps> = ({ block }) => {
-  const { updateBlock, updateBlockType, updateBlockData, addBlock, removeBlock, focusedBlockId, setFocusedBlockId, moveBlock } = useAppStore();
+  const { updateBlock, updateBlockType, updateBlockData, addBlock, removeBlock, focusedBlockId, setFocusedBlockId, moveBlock, runCodeBlock, fetchLiveData, runAIAssistant, toggleTimer, toggleBlocker } = useAppStore();
+  const { notify } = useNotification();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dividerRef = useRef<HTMLDivElement>(null);
   const [slashMenu, setSlashMenu] = useState<{ x: number, y: number } | null>(null);
   const [isDraggable, setIsDraggable] = useState(false);
+  const [time, setTime] = useState(0);
+
+  useEffect(() => {
+    let interval: any;
+    if (block.timer?.isRunning) {
+      interval = setInterval(() => {
+        const current = block.timer!.elapsed + (Date.now() - block.timer!.startTime!);
+        setTime(current);
+      }, 100);
+    } else {
+      setTime(block.timer?.elapsed || 0);
+    }
+    return () => clearInterval(interval);
+  }, [block.timer]);
+
+  const formatTime = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+    return `${h > 0 ? h + ':' : ''}${String(m % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (focusedBlockId === block.id) {
@@ -30,8 +53,9 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
 
   const adjustHeight = () => {
     if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-      inputRef.current.style.height = inputRef.current.scrollHeight + 'px';
+      const el = inputRef.current;
+      el.style.height = '0px'; // Temporarily shrink to get scrollHeight
+      el.style.height = el.scrollHeight + 'px';
     }
   };
 
@@ -82,6 +106,20 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
 
       const nextType = (block.type === 'bullet_list' || block.type === 'todo_list') ? block.type : 'text';
       addBlock(block.id, '', nextType);
+    } else if (e.key === 'ArrowUp' && inputRef.current?.selectionStart === 0) {
+      e.preventDefault();
+      const doc = useAppStore.getState().documents.find(d => d.id === useAppStore.getState().activeDocumentId);
+      if (doc) {
+        const idx = doc.blocks.findIndex(b => b.id === block.id);
+        if (idx > 0) setFocusedBlockId(doc.blocks[idx - 1].id);
+      }
+    } else if (e.key === 'ArrowDown' && inputRef.current?.selectionEnd === block.content.length) {
+      e.preventDefault();
+      const doc = useAppStore.getState().documents.find(d => d.id === useAppStore.getState().activeDocumentId);
+      if (doc) {
+        const idx = doc.blocks.findIndex(b => b.id === block.id);
+        if (idx < doc.blocks.length - 1) setFocusedBlockId(doc.blocks[idx + 1].id);
+      }
     } else if (e.key === 'Backspace' && block.content === '') {
       e.preventDefault();
       setSlashMenu(null);
@@ -90,7 +128,10 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
       } else {
         const doc = useAppStore.getState().documents.find(d => d.id === useAppStore.getState().activeDocumentId);
         if (doc && doc.blocks.length > 1) {
+          const idx = doc.blocks.findIndex(b => b.id === block.id);
+          const prevId = idx > 0 ? doc.blocks[idx - 1].id : null;
           removeBlock(block.id);
+          if (prevId) setFocusedBlockId(prevId);
         }
       }
     }
@@ -110,6 +151,12 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
     if (type !== 'table') {
       setTimeout(() => inputRef.current?.focus(), 0);
     }
+  };
+
+  const handleRunCode = async () => {
+    notify('コードを実行中...', 'info');
+    await runCodeBlock(block.id);
+    notify('コードの実行が完了しました', 'success');
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -175,6 +222,29 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
       >
         <GripVertical size={16} />
       </div>
+
+      <div className="block-side-actions">
+        {(block.type === 'todo_list' || block.type === 'text') && (
+          <button 
+            className={`block-timer-btn ${block.timer?.isRunning ? 'running' : ''}`} 
+            onClick={() => toggleTimer(block.id)}
+            title="タイムトラッキング"
+          >
+            <TimerIcon size={14} />
+            {time > 0 && <span>{formatTime(time)}</span>}
+          </button>
+        )}
+        <button 
+          className={`block-blocker-btn ${block.blocker?.isBlocked ? 'blocked' : ''}`}
+          onClick={() => {
+            const reason = block.blocker?.isBlocked ? '' : window.prompt('ブロッカーの理由を入力してください:');
+            if (reason !== null) toggleBlocker(block.id, reason);
+          }}
+          title="ブロッカー管理"
+        >
+          <OctagonAlert size={14} />
+        </button>
+      </div>
       
       <div className="block-content-area">
         {block.type === 'bullet_list' && <span className="bullet-dot">•</span>}
@@ -229,6 +299,85 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
               <button onClick={addTableCol}>列を追加</button>
               <button onClick={() => removeBlock(block.id)} className="danger">テーブル削除</button>
             </div>
+          </div>
+        ) : block.type === 'code' ? (
+          <div className="block-code-container">
+            <div className="block-code-header">
+              <select 
+                value={block.language || 'python'} 
+                onChange={(e) => updateBlockData(block.id, { language: e.target.value })}
+                className="code-lang-select"
+              >
+                <option value="python">Python</option>
+                <option value="sql">SQL</option>
+                <option value="r">R</option>
+              </select>
+              <button onClick={handleRunCode} className="code-run-btn">
+                <Play size={14} fill="currentColor" />
+                Run
+              </button>
+            </div>
+            <textarea
+              ref={inputRef}
+              value={block.content}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setFocusedBlockId(block.id)}
+              className="block-content code-textarea"
+              placeholder={placeholder}
+              spellCheck={false}
+            />
+            {block.executionResult && (
+              <div className={`code-result ${block.executionResult.error ? 'error' : ''}`}>
+                <div className="code-result-header">
+                  <Terminal size={12} />
+                  <span>Output</span>
+                </div>
+                <pre>{block.executionResult.error || block.executionResult.output || 'No output'}</pre>
+              </div>
+            )}
+          </div>
+        ) : block.type === 'live_data' ? (
+          <div className="block-live-data">
+            <div className="live-data-config">
+              <Globe size={14} className="icon-blue" />
+              <input 
+                placeholder="API URL (e.g. JSON API)" 
+                value={block.data?.url || ''} 
+                onChange={(e) => updateBlockData(block.id, { url: e.target.value })}
+              />
+              <input 
+                placeholder="JSON Path (e.g. rate.usd)" 
+                value={block.data?.path || ''} 
+                onChange={(e) => updateBlockData(block.id, { path: e.target.value })}
+              />
+              <button onClick={() => fetchLiveData(block.id)}><RefreshCw size={14} /></button>
+            </div>
+            <div className="live-data-value">
+              {block.content || 'データ未取得'}
+            </div>
+          </div>
+        ) : block.type === 'ai_assistant' ? (
+          <div className="block-ai-assistant">
+            <div className="ai-input-area">
+              <Sparkles size={16} className="icon-yellow" />
+              <textarea
+                ref={inputRef}
+                value={block.content}
+                onChange={handleChange}
+                placeholder="AIに指示を出す..."
+                className="ai-textarea"
+                rows={1}
+              />
+              <button onClick={() => runAIAssistant(block.id, block.content)} className="ai-send-btn">
+                <Send size={14} />
+              </button>
+            </div>
+            {block.executionResult && (
+              <div className="ai-output">
+                <pre>{block.executionResult.output || block.executionResult.error}</pre>
+              </div>
+            )}
           </div>
         ) : (
           <textarea

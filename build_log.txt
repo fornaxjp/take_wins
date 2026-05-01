@@ -1,0 +1,31 @@
+
+> take-wins@0.1.0 build
+> vite build
+
+vite v5.4.11 building for production...
+transforming...
+✓ 4 modules transformed.
+x Build failed in 226ms
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+/Users/mmpnt/.gemini/antigravity/scratch/take_wins/src/App.tsx:23:8: ERROR: The symbol "syncStatus" has already been declared
+file: /Users/mmpnt/.gemini/antigravity/scratch/take_wins/src/App.tsx:23:8
+
+The symbol "syncStatus" has already been declared
+21 |    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+22 |    const [isAppLocked, setIsAppLocked] = useState(false);
+23 |    const [syncStatus, setSyncStatus] = useState<'idle'|'syncing'|'done'|'error'>('idle');
+   |          ^
+24 |    const loadedUidRef = useRef<string | null>(null);
+25 |    const isSyncingRef = useRef(false);
+
+    at failureErrorWithLog (/Users/mmpnt/.gemini/antigravity/scratch/take_wins/node_modules/esbuild/lib/main.js:1472:15)
+    at /Users/mmpnt/.gemini/antigravity/scratch/take_wins/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/Users/mmpnt/.gemini/antigravity/scratch/take_wins/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/Users/mmpnt/.gemini/antigravity/scratch/take_wins/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/Users/mmpnt/.gemini/antigravity/scratch/take_wins/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:509:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)

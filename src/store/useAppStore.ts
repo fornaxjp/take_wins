@@ -1,46 +1,46 @@
-import { create } from 'zustand';
-import type { Block, BlockType, Document } from '../types';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 
-// localStorage Helpers
-const localKey = (uid: string) => `tw_u_${uid}`;
-const saveLocal = (uid: string, docs: Document[]) => {
-  try { localStorage.setItem(localKey(uid), JSON.stringify(docs)); } catch (_) {}
-};
-const loadLocal = (uid: string): Document[] => {
-  try { const r = localStorage.getItem(localKey(uid)); return r ? JSON.parse(r) : []; }
-  catch (_) { return []; }
-};
+// Sync status type
+export type SyncStatus = 'idle' | 'syncing' | 'done' | 'error' | 'offline';
 
-const generateId = () => Math.random().toString(36).substring(2, 9);
+
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID().substring(0, 8);
+  }
+  return Math.random().toString(36).substring(2, 10);
+};
 const createInitialBlock = (): Block => ({ id: generateId(), type: 'text', content: '' });
 
 interface AppState {
   documents: Document[];
   activeDocumentId: string | null;
+  sideDocumentId: string | null;
   focusedBlockId: string | null;
   sortType: 'custom' | 'date' | 'title' | 'tag';
   userId: string | null;
   isReady: boolean;
   isSettingsModalOpen: boolean;
-  theme: 'light' | 'dark';
   fontFamily: string;
   fontSize: string;
   _dirtyDocIds: Set<string>;
+  unlockedDocIds: Set<string>;
+  syncStatus: SyncStatus;
 
   setUserId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setFontFamily: (font: string) => void;
   setFontSize: (size: string) => void;
+  initializeLocalData: () => Promise<void>;
   fetchFromCloud: () => Promise<void>;
-  syncToCloud: (docId: string) => Promise<void>;
-  syncAllDirty: () => Promise<void>;
+  syncWithCloud: () => Promise<void>;
   markDirty: (docId: string) => void;
-  clearDocuments: () => void;
+  clearDocuments: () => Promise<void>;
   createDocument: (parentId?: string | null) => void;
-  createTemplateDocument: (type: 'password' | 'account' | 'meeting') => void;
+  createTemplateDocument: (type: any) => void;
   selectDocument: (id: string) => void;
+  setSideDocument: (id: string | null) => void;
   deleteDocument: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => void;
   moveDocument: (id: string, newParentId: string | null) => void;
@@ -54,20 +54,29 @@ interface AppState {
   removeBlock: (id: string) => void;
   moveBlock: (dragId: string, dropId: string) => void;
   setFocusedBlockId: (id: string | null) => void;
+  unlockDocument: (id: string) => void;
+  toggleDocumentLock: (id: string) => void;
+  runCodeBlock: (id: string) => Promise<void>;
+  fetchLiveData: (id: string) => Promise<void>;
+  runAIAssistant: (id: string, prompt: string) => Promise<void>;
+  toggleTimer: (id: string) => void;
+  toggleBlocker: (id: string, reason?: string) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
   documents: [],
   activeDocumentId: null,
+  sideDocumentId: null,
   focusedBlockId: null,
   sortType: 'custom',
   userId: null,
   isReady: false,
   isSettingsModalOpen: false,
-  theme: (localStorage.getItem('tw_theme') as 'light' | 'dark') || 'light',
+  syncStatus: 'idle',
   fontFamily: localStorage.getItem('tw_fontFamily') || "'Inter', system-ui, sans-serif",
   fontSize: localStorage.getItem('tw_fontSize') || "16px",
   _dirtyDocIds: new Set<string>(),
+  unlockedDocIds: new Set<string>(),
 
   setUserId: (id) => set({ userId: id }),
   setSettingsModalOpen: (open) => set({ isSettingsModalOpen: open }),
@@ -86,52 +95,112 @@ export const useAppStore = create<AppState>()((set, get) => ({
     localStorage.setItem('tw_fontSize', fontSize);
     document.documentElement.style.setProperty('--app-font-size', fontSize);
   },
-  markDirty: (docId) => { get()._dirtyDocIds.add(docId); },
-  clearDocuments: () => {
-    const { userId } = get();
-    if (userId) { try { localStorage.removeItem(localKey(userId)); } catch(_) {} }
+  markDirty: (docId) => { 
+    set(s => {
+      const newDirty = new Set(s._dirtyDocIds);
+      newDirty.add(docId);
+      return { _dirtyDocIds: newDirty };
+    });
+  },
+  clearDocuments: async () => {
+    await db.documents.clear();
+    await db.syncMetadata.clear();
     set({ documents: [], activeDocumentId: null, focusedBlockId: null, userId: null, isReady: false, _dirtyDocIds: new Set() });
+  },
+
+  initializeLocalData: async () => {
+    const docs = await db.documents.toArray();
+    set({ documents: docs, isReady: true, activeDocumentId: docs[0]?.id || null });
   },
 
   fetchFromCloud: async () => {
     const { userId } = get();
-    if (!userId) { set({ isReady: true }); return; }
-    const localDocs = loadLocal(userId);
-    if (localDocs.length > 0 && !get().isReady) {
-      set({ documents: localDocs, activeDocumentId: localDocs[0].id, isReady: true });
-    }
-    const { data, error } = await supabase.from('documents').select('data, updated_at').eq('user_id', userId);
-    if (error) { set({ isReady: true }); return; }
-    if (data && data.length > 0) {
-      const cloudDocs: Document[] = data.map((row: any) => typeof row.data === 'string' ? JSON.parse(row.data) : row.data);
-      set({ documents: cloudDocs, activeDocumentId: cloudDocs[0]?.id || null, isReady: true });
-      saveLocal(userId, cloudDocs);
-    } else {
-      set({ isReady: true });
-    }
-  },
-
-  syncToCloud: async (docId) => {
-    const { userId, documents } = get();
     if (!userId) return;
-    const doc = documents.find(d => d.id === docId);
-    if (!doc) return;
-    await supabase.from('documents').upsert({ id: doc.id, user_id: userId, data: doc, updated_at: doc.updatedAt });
+    
+    set({ syncStatus: 'syncing' });
+    try {
+      const { data, error } = await supabase.from('documents').select('data, updated_at').eq('user_id', userId);
+      if (error) throw error;
+      
+      if (data) {
+        const cloudDocs: Document[] = data.map(row => typeof row.data === 'string' ? JSON.parse(row.data) : row.data);
+        
+        for (const cloudDoc of cloudDocs) {
+          const localDoc = await db.documents.get(cloudDoc.id);
+          if (!localDoc || cloudDoc.updatedAt > localDoc.updatedAt) {
+            await db.documents.put(cloudDoc);
+          }
+        }
+        
+        const allLocal = await db.documents.toArray();
+        set({ documents: allLocal, syncStatus: 'done' });
+      }
+    } catch (e) {
+      console.error('Fetch error:', e);
+      set({ syncStatus: 'error' });
+    }
   },
 
-  syncAllDirty: async () => {
-    const { userId, documents, _dirtyDocIds } = get();
-    if (!userId || _dirtyDocIds.size === 0) return;
-    const toSync = documents.filter(d => _dirtyDocIds.has(d.id));
-    const rows = toSync.map(doc => ({ id: doc.id, user_id: userId, data: doc, updated_at: doc.updatedAt }));
-    await supabase.from('documents').upsert(rows);
-    _dirtyDocIds.clear();
+  syncWithCloud: async () => {
+    const { userId, _dirtyDocIds, documents, syncStatus } = get();
+    if (!userId || !navigator.onLine) {
+      if (!navigator.onLine) set({ syncStatus: 'offline' });
+      return;
+    }
+    if (syncStatus === 'syncing') return;
+
+    set({ syncStatus: 'syncing' });
+    try {
+      // 1. Push local dirty changes
+      if (_dirtyDocIds.size > 0) {
+        const dirtyDocs = documents.filter(d => _dirtyDocIds.has(d.id));
+        const rows = dirtyDocs.map(doc => ({ 
+          id: doc.id, 
+          user_id: userId, 
+          data: doc, 
+          updated_at: doc.updatedAt 
+        }));
+        const { error } = await supabase.from('documents').upsert(rows);
+        if (error) throw error;
+        set({ _dirtyDocIds: new Set() });
+      }
+
+      // 2. Pull remote changes
+      const { data, error } = await supabase.from('documents').select('data, updated_at').eq('user_id', userId);
+      if (error) throw error;
+
+      if (data) {
+        const cloudDocs: Document[] = data.map(row => typeof row.data === 'string' ? JSON.parse(row.data) : row.data);
+        let hasChanges = false;
+        
+        for (const cloudDoc of cloudDocs) {
+          const localDoc = await db.documents.get(cloudDoc.id);
+          if (!localDoc || cloudDoc.updatedAt > localDoc.updatedAt) {
+            await db.documents.put(cloudDoc);
+            hasChanges = true;
+          } else if (localDoc && localDoc.updatedAt > cloudDoc.updatedAt) {
+            // Local is newer but somehow not marked dirty, or sync failed previously
+            await supabase.from('documents').upsert({ id: localDoc.id, user_id: userId, data: localDoc, updated_at: localDoc.updatedAt });
+          }
+        }
+
+        if (hasChanges) {
+          const allLocal = await db.documents.toArray();
+          set({ documents: allLocal });
+        }
+      }
+      set({ syncStatus: 'done' });
+    } catch (e) {
+      console.error('Sync error:', e);
+      set({ syncStatus: 'error' });
+    }
   },
 
   createDocument: (parentId = null) => {
     const newDoc: Document = { id: generateId(), title: '', blocks: [createInitialBlock()], isFavorite: false, createdAt: Date.now(), updatedAt: Date.now(), order: get().documents.length, parentId };
     set(s => ({ documents: [...s.documents, newDoc], activeDocumentId: newDoc.id }));
-    get()._dirtyDocIds.add(newDoc.id);
+    get().markDirty(newDoc.id);
+    db.documents.add(newDoc);
   },
 
   createTemplateDocument: (type) => {
@@ -168,12 +237,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   selectDocument: (id) => set({ activeDocumentId: id }),
+  setSideDocument: (id) => set({ sideDocumentId: id }),
 
   deleteDocument: async (id) => {
-    const { userId } = get();
-    set(s => ({ documents: s.documents.filter(d => d.id !== id), activeDocumentId: s.activeDocumentId === id ? null : s.activeDocumentId }));
+    const { userId, documents } = get();
+    // Recursively find all children to delete
+    const findChildrenIds = (parentId: string): string[] => {
+      const children = documents.filter(d => d.parentId === parentId);
+      return children.reduce((acc, child) => [...acc, child.id, ...findChildrenIds(child.id)], [] as string[]);
+    };
+
+    const idsToDelete = [id, ...findChildrenIds(id)];
+    set(s => ({ 
+      documents: s.documents.filter(d => !idsToDelete.includes(d.id)), 
+      activeDocumentId: idsToDelete.includes(s.activeDocumentId || '') ? null : s.activeDocumentId 
+    }));
+
     if (userId) {
-      await supabase.from('documents').delete().eq('id', id).eq('user_id', userId);
+      await supabase.from('documents').delete().in('id', idsToDelete).eq('user_id', userId);
     }
   },
 
@@ -188,7 +269,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
     get()._dirtyDocIds.add(id);
   },
 
-  updateDocumentProperties: (id, props) => set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, properties: { ...d.properties, ...props } } : d) })),
+  updateDocumentProperties: (id, props) => {
+    set(s => ({ documents: s.documents.map(d => d.id === id ? { ...d, properties: { ...(d.properties || {}), ...props }, updatedAt: Date.now() } : d) }));
+    get().markDirty(id);
+  },
 
   addBlock: (afterId, content = '', type = 'text') => {
     const id = generateId();
@@ -234,6 +318,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       if (!doc) return s;
       const from = doc.blocks.findIndex(b => b.id === dragId);
       const to = doc.blocks.findIndex(b => b.id === dropId);
+      if (from === -1 || to === -1) return s;
       const newBlocks = [...doc.blocks];
       const [moved] = newBlocks.splice(from, 1);
       newBlocks.splice(to, 0, moved);
@@ -244,12 +329,175 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   setFocusedBlockId: (id) => set({ focusedBlockId: id }),
+
+  unlockDocument: (id) => set(s => {
+    const newSet = new Set(s.unlockedDocIds);
+    newSet.add(id);
+    return { unlockedDocIds: newSet };
+  }),
+
+  toggleDocumentLock: (id) => set(s => {
+    const doc = s.documents.find(d => d.id === id);
+    if (!doc) return s;
+    const isLocked = !doc.properties?.isLocked;
+    const newSet = new Set(s.unlockedDocIds);
+    if (isLocked) {
+      newSet.delete(id); // Re-lock it immediately
+    } else {
+      newSet.add(id); // Keep it accessible
+    }
+    const updatedDocs = s.documents.map(d => d.id === id ? { ...d, properties: { ...d.properties, isLocked } } : d);
+    get().markDirty(id);
+    return { documents: updatedDocs, unlockedDocIds: newSet };
+  }),
+
+  runCodeBlock: async (id) => {
+    const { documents, activeDocumentId } = get();
+    const doc = documents.find(d => d.id === activeDocumentId);
+    if (!doc) return;
+    const block = doc.blocks.find(b => b.id === id);
+    if (!block || block.type !== 'code') return;
+
+    const lang = block.language || 'python';
+    const { runCode } = await import('../lib/codeRunner');
+    const result = await runCode(lang, block.content);
+
+    set(s => ({
+      documents: s.documents.map(d => d.id === activeDocumentId ? {
+        ...d,
+        blocks: d.blocks.map(b => b.id === id ? { ...b, executionResult: result } : b),
+        updatedAt: Date.now()
+      } : d)
+    }));
+    get().markDirty(activeDocumentId!);
+  },
+
+  fetchLiveData: async (id) => {
+    const { documents, activeDocumentId } = get();
+    const doc = documents.find(d => d.id === activeDocumentId);
+    if (!doc) return;
+    const block = doc.blocks.find(b => b.id === id);
+    if (!block || block.type !== 'live_data') return;
+
+    const url = block.data?.url;
+    if (!url) return;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      // Simple path selector if provided, e.g. "rate.usd"
+      let value = data;
+      if (block.data?.path) {
+        const parts = block.data.path.split('.');
+        for (const p of parts) value = value[p];
+      }
+      
+      set(s => ({
+        documents: s.documents.map(d => d.id === activeDocumentId ? {
+          ...d,
+          blocks: d.blocks.map(b => b.id === id ? { ...b, content: String(value), updatedAt: Date.now() } : b),
+          updatedAt: Date.now()
+        } : d)
+      }));
+      get().markDirty(activeDocumentId!);
+    } catch (e) {
+      console.error('Live Data Error:', e);
+    }
+  },
+
+  runAIAssistant: async (id, prompt) => {
+    const { documents, activeDocumentId } = get();
+    const doc = documents.find(d => d.id === activeDocumentId);
+    if (!doc) return;
+
+    // Get keys from localStorage
+    const keys = JSON.parse(localStorage.getItem('tw_ai_keys') || '{}');
+    const model = localStorage.getItem('tw_ai_model') || 'openai';
+    
+    set(s => ({
+      documents: s.documents.map(d => d.id === activeDocumentId ? {
+        ...d,
+        blocks: d.blocks.map(b => b.id === id ? { ...b, executionResult: { output: '思考中...', type: 'text' } } : b)
+      } : d)
+    }));
+
+    try {
+      let output = '';
+      if (model === 'openai' && keys.openai) {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.openai}` },
+          body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }] })
+        });
+        const data = await res.json();
+        output = data.choices[0].message.content;
+      } else {
+        output = 'APIキーが設定されていないか、モデルが未対応です。設定画面でキーを入力してください。';
+      }
+
+      set(s => ({
+        documents: s.documents.map(d => d.id === activeDocumentId ? {
+          ...d,
+          blocks: d.blocks.map(b => b.id === id ? { ...b, executionResult: { output, type: 'text' } } : b),
+          updatedAt: Date.now()
+        } : d)
+      }));
+      get().markDirty(activeDocumentId!);
+    } catch (e: any) {
+      set(s => ({
+        documents: s.documents.map(d => d.id === activeDocumentId ? {
+          ...d,
+          blocks: d.blocks.map(b => b.id === id ? { ...b, executionResult: { output: '', error: e.message, type: 'text' } } : b)
+        } : d)
+      }));
+    }
+  },
+
+  toggleTimer: (id) => {
+    const { activeDocumentId } = get();
+    if (!activeDocumentId) return;
+    
+    set(s => ({
+      documents: s.documents.map(d => d.id === activeDocumentId ? {
+        ...d,
+        blocks: d.blocks.map(b => {
+          if (b.id !== id) return b;
+          const isRunning = !b.timer?.isRunning;
+          const startTime = isRunning ? Date.now() : null;
+          const elapsed = b.timer ? (isRunning ? b.timer.elapsed : b.timer.elapsed + (Date.now() - (b.timer.startTime || Date.now()))) : 0;
+          return { ...b, timer: { isRunning, startTime, elapsed } };
+        }),
+        updatedAt: Date.now()
+      } : d)
+    }));
+    get().markDirty(activeDocumentId);
+  },
+
+  toggleBlocker: (id, reason = '') => {
+    const { activeDocumentId } = get();
+    if (!activeDocumentId) return;
+
+    set(s => ({
+      documents: s.documents.map(d => d.id === activeDocumentId ? {
+        ...d,
+        blocks: d.blocks.map(b => {
+          if (b.id !== id) return b;
+          return { ...b, blocker: { isBlocked: !b.blocker?.isBlocked, reason } };
+        }),
+        updatedAt: Date.now()
+      } : d)
+    }));
+    get().markDirty(activeDocumentId);
+  },
 }));
 
-// Auto-save to localStorage on every change
+// Auto-save to Dexie on every change
 useAppStore.subscribe((state, prevState) => {
-  if (state.userId && state.documents !== prevState.documents && state.isReady) {
-    saveLocal(state.userId, state.documents);
+  if (state.documents !== prevState.documents && state.isReady) {
+    // Persistent Dexie save
+    db.documents.clear().then(() => {
+      db.documents.bulkAdd(state.documents);
+    });
   }
 });
 
