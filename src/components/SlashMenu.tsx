@@ -48,11 +48,24 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose })
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
+  const [adjustedTop, setAdjustedTop] = useState(y + 8);
+
+  useEffect(() => {
+    if (menuRef.current) {
+      const height = menuRef.current.offsetHeight;
+      if (y + 8 + height > window.innerHeight) {
+        setAdjustedTop(Math.max(8, y - height - 32)); // Adjust upwards if overflowing
+      } else {
+        setAdjustedTop(y + 8);
+      }
+    }
+  }, [y]);
+
   // Smart positioning: keep menu on screen
   const menuStyle: React.CSSProperties = {
     position: 'fixed',
     left: Math.min(x, window.innerWidth - 320),
-    top: y + 8,
+    top: adjustedTop,
     zIndex: 9999,
   };
 

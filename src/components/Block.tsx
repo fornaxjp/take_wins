@@ -365,6 +365,7 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
                 ref={inputRef}
                 value={block.content}
                 onChange={handleChange}
+                onKeyDown={handleKeyDown}
                 placeholder="AIに指示を出す..."
                 className="ai-textarea"
                 rows={1}

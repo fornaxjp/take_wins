@@ -432,6 +432,30 @@ export const useAppStore = create<AppState>()((set, get) => ({
         });
         const data = await res.json();
         output = data.choices[0].message.content;
+      } else if (model === 'gemini' && keys.gemini) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${keys.gemini}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        output = data.candidates[0].content.parts[0].text;
+      } else if (model === 'claude' && keys.claude) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': keys.claude, 'anthropic-version': '2023-06-01', 'anthropic-dangerously-allow-browser': 'true' },
+          body: JSON.stringify({ model: 'claude-3-5-sonnet-20240620', max_tokens: 1024, messages: [{ role: 'user', content: prompt }] })
+        });
+        const data = await res.json();
+        output = data.content[0].text;
+      } else if (model === 'groq' && keys.groq) {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.groq}` },
+          body: JSON.stringify({ model: 'mixtral-8x7b-32768', messages: [{ role: 'user', content: prompt }] })
+        });
+        const data = await res.json();
+        output = data.choices[0].message.content;
       } else {
         output = 'APIキーが設定されていないか、モデルが未対応です。設定画面でキーを入力してください。';
       }

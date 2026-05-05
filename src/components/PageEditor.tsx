@@ -16,6 +16,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
   const { documents, addBlock, updateDocumentTitle, updateDocumentProperties, unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant } = useAppStore();
   const { notify } = useNotification();
   const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
+  const [tagInput, setTagInput] = React.useState('');
 
   const doc = documents.find(d => d.id === documentId);
 
@@ -44,10 +45,10 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      const val = e.currentTarget.value.trim();
+      const val = tagInput.trim();
       if (val && !props.tags.includes(val)) {
         updateDocumentProperties(doc.id, { tags: [...props.tags, val] });
-        e.currentTarget.value = '';
+        setTagInput('');
       }
     }
   };
@@ -106,7 +107,13 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
             {props.tags.map((tag: string) => (
               <span key={tag} className="property-tag">{tag} <button onClick={() => removeTag(tag)}>×</button></span>
             ))}
-            <input className="property-tag-input" placeholder="＋ タグを追加" onKeyDown={handleAddTag} />
+            <input 
+              className="property-tag-input" 
+              placeholder="＋ タグを追加" 
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleAddTag} 
+            />
           </div>
         </div>
         <div className="property-row">
