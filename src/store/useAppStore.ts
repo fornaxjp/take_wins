@@ -466,15 +466,59 @@ export const useAppStore = create<AppState>()((set, get) => ({
         output = data.choices[0].message.content;
       } else {
         output = 'APIキーが設定されていないか、モデルが未対応です。設定画面でキーを入力してください。';
+        // Fallback to text if error
+        set(s => ({
+          documents: s.documents.map(d => d.id === activeDocumentId ? {
+            ...d,
+            blocks: d.blocks.map(b => b.id === id ? { ...b, executionResult: { output, type: 'text' } } : b),
+            updatedAt: Date.now()
+          } : d)
+        }));
+        return;
       }
 
-      set(s => ({
-        documents: s.documents.map(d => d.id === activeDocumentId ? {
-          ...d,
-          blocks: d.blocks.map(b => b.id === id ? { ...b, executionResult: { output, type: 'text' } } : b),
-          updatedAt: Date.now()
-        } : d)
-      }));
+      // Parse markdown to blocks
+      const lines = output.split('\n');
+      const newBlocks: any[] = [];
+      let currentTable: any = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('|') && line.endsWith('|')) {
+          if (line.includes('---')) continue;
+          const cells = line.split('|').slice(1, -1).map(c => c.trim());
+          if (!currentTable) {
+            currentTable = { rows: 1, cols: cells.length, cells: [cells] };
+          } else {
+            currentTable.rows++;
+            currentTable.cells.push(cells);
+          }
+        } else {
+          if (currentTable) {
+            newBlocks.push({ id: generateId(), type: 'table', content: '', data: currentTable });
+            currentTable = null;
+          }
+          if (line) {
+            if (line.startsWith('# ')) newBlocks.push({ id: generateId(), type: 'h1', content: line.slice(2) });
+            else if (line.startsWith('## ')) newBlocks.push({ id: generateId(), type: 'h2', content: line.slice(3) });
+            else if (line.startsWith('### ')) newBlocks.push({ id: generateId(), type: 'h3', content: line.slice(4) });
+            else if (line.startsWith('- ')) newBlocks.push({ id: generateId(), type: 'bullet_list', content: line.slice(2) });
+            else if (line.match(/^\d+\.\s/)) newBlocks.push({ id: generateId(), type: 'bullet_list', content: line.replace(/^\d+\.\s/, '') });
+            else newBlocks.push({ id: generateId(), type: 'text', content: line });
+          }
+        }
+      }
+      if (currentTable) newBlocks.push({ id: generateId(), type: 'table', content: '', data: currentTable });
+      if (newBlocks.length === 0) newBlocks.push({ id: generateId(), type: 'text', content: output });
+
+      set(s => {
+        const d = s.documents.find(doc => doc.id === activeDocumentId);
+        if (!d) return s;
+        const bIdx = d.blocks.findIndex(b => b.id === id);
+        const upBlocks = [...d.blocks];
+        upBlocks.splice(bIdx, 1, ...newBlocks);
+        return { documents: s.documents.map(doc => doc.id === activeDocumentId ? { ...doc, blocks: upBlocks, updatedAt: Date.now() } : doc) };
+      });
       get().markDirty(activeDocumentId!);
     } catch (e: any) {
       set(s => ({
