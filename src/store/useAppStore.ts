@@ -456,6 +456,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
         });
         const data = await res.json();
         output = data.choices[0].message.content;
+      } else if (model === 'xiaomi' && keys.xiaomi) {
+        const res = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.xiaomi}` },
+          body: JSON.stringify({ model: 'mimo-v2.5', messages: [{ role: 'user', content: prompt }] })
+        });
+        const data = await res.json();
+        output = data.choices[0].message.content;
       } else {
         output = 'APIキーが設定されていないか、モデルが未対応です。設定画面でキーを入力してください。';
       }

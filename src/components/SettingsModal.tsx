@@ -9,7 +9,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   const { clearDocuments, setSettingsModalOpen, theme, setTheme, fontFamily, fontSize, setFontFamily, setFontSize } = useAppStore();
   const [email, setEmail] = useState('');
   const [activeTab, setActiveTab] = useState<'account'|'applock'|'ai'>('account');
-  const [aiKeys, setAiKeys] = useState({ openai: '', gemini: '', claude: '', groq: '' });
+  const [aiKeys, setAiKeys] = useState({ openai: '', gemini: '', claude: '', groq: '', xiaomi: '' });
   const [aiModel, setAiModel] = useState('openai');
 
   useEffect(() => {
@@ -282,6 +282,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 <option value="gemini">Gemini (1.5 Pro)</option>
                 <option value="claude">Claude (3.5 Sonnet)</option>
                 <option value="groq">Groq (Mixtral/Llama)</option>
+                <option value="xiaomi">Xiaomi MiMo</option>
               </select>
             </div>
 
@@ -303,6 +304,11 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>Groq API Key</div>
               <input type="password" value={aiKeys.groq} onChange={(e) => setAiKeys({...aiKeys, groq: e.target.value})} placeholder="gsk_..." style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', outline: 'none' }} />
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>Xiaomi MiMo API Key</div>
+              <input type="password" value={aiKeys.xiaomi} onChange={(e) => setAiKeys({...aiKeys, xiaomi: e.target.value})} placeholder="..." style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--menu-border)', background: 'transparent', color: 'var(--text-color)', outline: 'none' }} />
             </div>
 
             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
