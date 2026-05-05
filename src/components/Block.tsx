@@ -358,25 +358,47 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
             </div>
           </div>
         ) : block.type === 'ai_assistant' ? (
-          <div className="block-ai-assistant">
-            <div className="ai-input-area">
-              <Sparkles size={16} className="icon-yellow" />
+          <div className="block-ai-modern">
+            <div className="ai-modern-inner">
+              <Sparkles size={16} className="ai-sparkle-icon" />
               <textarea
                 ref={inputRef}
                 value={block.content}
                 onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                placeholder="AIに指示を出す..."
-                className="ai-textarea"
+                onKeyDown={(e) => {
+                  handleKeyDown(e);
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (block.content.trim()) runAIAssistant(block.id, block.content);
+                  }
+                }}
+                placeholder="AIに文章や表の作成を依頼する..."
+                className="ai-textarea-modern"
                 rows={1}
+                disabled={block.executionResult?.output === '思考中...'}
               />
-              <button onClick={() => runAIAssistant(block.id, block.content)} className="ai-send-btn">
+              <button 
+                onClick={() => runAIAssistant(block.id, block.content)} 
+                className="ai-send-btn-modern"
+                disabled={!block.content.trim() || block.executionResult?.output === '思考中...'}
+              >
                 <Send size={14} />
               </button>
             </div>
-            {block.executionResult && (
-              <div className="ai-output">
-                <pre>{block.executionResult.output || block.executionResult.error}</pre>
+            {block.executionResult && block.executionResult.output === '思考中...' && (
+              <div className="ai-loading-state">
+                <div className="ai-shimmer"></div>
+                <span>AIが思考中...</span>
+              </div>
+            )}
+            {block.executionResult && block.executionResult.output !== '思考中...' && (
+              <div className="ai-stuck-recovery">
+                <p>前回の生成結果が残っています。再生成するか削除してください。</p>
+                <div className="ai-output-preview">{block.executionResult.output.substring(0, 100)}...</div>
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                  <button onClick={() => runAIAssistant(block.id, block.content)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: '#8b5cf6', color: 'white', border: 'none', cursor: 'pointer' }}>再生成</button>
+                  <button onClick={() => removeBlock(block.id)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: 'var(--google-red)', color: 'white', border: 'none', cursor: 'pointer' }}>削除</button>
+                </div>
               </div>
             )}
           </div>
