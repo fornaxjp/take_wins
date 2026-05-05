@@ -1101,3 +1101,174 @@ button {
 
 
 
+
+/* ===== MODERN SLASH MENU ===== */
+.slash-menu-modern {
+  width: 300px;
+  background: var(--bg-color);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+  padding: 8px;
+  border: 1px solid var(--menu-border);
+  overflow: hidden;
+  animation: menuPop 0.15s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes menuPop {
+  from { opacity:0; transform: scale(0.94) translateY(-6px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.slash-menu-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--placeholder-color);
+  padding: 4px 12px 8px;
+}
+.slash-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+.slash-menu-row.active, .slash-menu-row:hover {
+  background: var(--hover-bg);
+}
+.slash-menu-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.slash-menu-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.slash-menu-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+.slash-menu-desc {
+  font-size: 11px;
+  color: var(--placeholder-color);
+}
+
+/* ===== MODERN SIDEBAR BUTTONS ===== */
+.sidebar-new-btn-google {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--text-color) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  justify-content: flex-start !important;
+}
+.sidebar-new-btn-google:hover {
+  background: var(--hover-bg) !important;
+  box-shadow: none !important;
+}
+
+/* ===== MODERN EMPTY STATE ===== */
+.editor-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  opacity: 0.8;
+}
+.editor-empty h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+.editor-empty p {
+  font-size: 14px;
+  color: var(--placeholder-color);
+  max-width: 280px;
+  text-align: center;
+}
+.editor-empty .btn-primary {
+  margin-top: 8px;
+  font-size: 14px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 500;
+  background: var(--google-blue);
+}
+
+/* ===== CLEAN PROPERTIES ===== */
+.editor-properties {
+  border-top: none !important;
+  border-bottom: none !important;
+  padding: 0 0 24px !important;
+  gap: 6px !important;
+}
+.property-row select {
+  border: none;
+  background: var(--hover-bg);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--text-color);
+  cursor: pointer;
+  outline: none;
+}
+.property-tag {
+  border: none !important;
+  background: var(--hover-bg) !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+}
+
+/* ===== AUTH CLEAN ===== */
+.auth-box {
+  border: none !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+/* ===== CLEAN EMPTY BLOCK PLACEHOLDER ===== */
+.empty-block-placeholder {
+  color: var(--placeholder-color);
+  font-size: 14px;
+  padding: 12px 0;
+  cursor: text;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.editor-blocks:hover .empty-block-placeholder {
+  opacity: 1;
+}
+
+/* ===== BTN-SMALL MODERN ===== */
+.btn-small {
+  background: var(--hover-bg);
+  border: none;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-color);
+}
+.btn-small:hover {
+  background: var(--active-bg);
+  color: var(--active-text);
+}
