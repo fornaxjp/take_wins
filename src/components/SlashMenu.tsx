@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Type, Heading1, Heading2, Heading3, List, CheckSquare, Quote, Minus, Code, Table as TableIcon, Globe, Sparkles } from 'lucide-react';
 import type { BlockType } from '../types';
 
@@ -55,7 +56,7 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose })
     zIndex: 9999,
   };
 
-  return (
+  return createPortal(
     <div ref={menuRef} style={menuStyle} className="slash-menu-modern">
       <div className="slash-menu-label">ブロックを挿入</div>
       {menuItems.map((item, idx) => (
@@ -74,6 +75,7 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose })
           </span>
         </button>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 };

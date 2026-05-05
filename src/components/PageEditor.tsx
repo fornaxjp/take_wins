@@ -106,7 +106,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
             {props.tags.map((tag: string) => (
               <span key={tag} className="property-tag">{tag} <button onClick={() => removeTag(tag)}>×</button></span>
             ))}
-            <input placeholder="＋ タグを追加" onKeyDown={handleAddTag} />
+            <input className="property-tag-input" placeholder="＋ タグを追加" onKeyDown={handleAddTag} />
           </div>
         </div>
         <div className="property-row">

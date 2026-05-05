@@ -1237,6 +1237,24 @@ button {
   border-radius: 8px !important;
   font-size: 12px !important;
 }
+.property-tag-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--text-color);
+  padding: 4px 8px;
+  width: 120px;
+}
+.property-tag-input::placeholder {
+  color: var(--placeholder-color);
+}
+.property-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
 /* ===== AUTH CLEAN ===== */
 .auth-box {
