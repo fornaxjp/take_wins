@@ -423,12 +423,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }));
 
     try {
+      const systemInstruction = `\n\n[System Instruction: You are a document generator. Output ONLY valid Markdown. DO NOT include any conversational text, greetings, or polite filler (e.g., "Here is your table", "Let me know if..."). If the user asks for a table without specifying data, leave ALL cells completely EMPTY (just space) instead of writing "Row 1", "Column 1", etc.]`;
+      const fullPrompt = prompt + systemInstruction;
+
       let output = '';
       if (model === 'openai' && keys.openai) {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.openai}` },
-          body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }] })
+          body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: fullPrompt }] })
         });
         const data = await res.json();
         output = data.choices[0].message.content;
@@ -436,7 +439,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${keys.gemini}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
         });
         const data = await res.json();
         output = data.candidates[0].content.parts[0].text;
@@ -444,7 +447,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': keys.claude, 'anthropic-version': '2023-06-01', 'anthropic-dangerously-allow-browser': 'true' },
-          body: JSON.stringify({ model: 'claude-3-5-sonnet-20240620', max_tokens: 1024, messages: [{ role: 'user', content: prompt }] })
+          body: JSON.stringify({ model: 'claude-3-5-sonnet-20240620', max_tokens: 1024, messages: [{ role: 'user', content: fullPrompt }] })
         });
         const data = await res.json();
         output = data.content[0].text;
@@ -452,7 +455,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.groq}` },
-          body: JSON.stringify({ model: 'mixtral-8x7b-32768', messages: [{ role: 'user', content: prompt }] })
+          body: JSON.stringify({ model: 'mixtral-8x7b-32768', messages: [{ role: 'user', content: fullPrompt }] })
         });
         const data = await res.json();
         output = data.choices[0].message.content;
@@ -460,7 +463,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         const res = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.xiaomi}` },
-          body: JSON.stringify({ model: 'mimo-v2.5', messages: [{ role: 'user', content: prompt }] })
+          body: JSON.stringify({ model: 'mimo-v2.5', messages: [{ role: 'user', content: fullPrompt }] })
         });
         const data = await res.json();
         output = data.choices[0].message.content;
