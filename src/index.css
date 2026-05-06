@@ -289,20 +289,22 @@ body {
 }
 
 .editor-title-input {
-  font-size: 42px;
-  font-weight: 700;
-  margin-bottom: 24px;
+  font-size: 38px;
+  font-weight: 800;
+  margin-bottom: 32px;
   border: none;
   outline: none;
   width: 100%;
   background: transparent;
   color: var(--text-color);
-  letter-spacing: -1px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .editor-title-input::placeholder {
   color: var(--placeholder-color);
-  opacity: 0.3;
+  opacity: 0.22;
+  font-weight: 700;
 }
 
 /* Blocks */

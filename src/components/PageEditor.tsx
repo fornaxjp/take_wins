@@ -88,7 +88,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
         className="editor-title-input"
         value={doc.title}
         onChange={(e) => updateDocumentTitle(doc.id, e.target.value)}
-        placeholder="無題のドキュメント"
+        placeholder="無題"
       />
 
       <div className="editor-properties">
