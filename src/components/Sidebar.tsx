@@ -14,12 +14,14 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { 
+    documents, activeDocumentId, createDocument, selectDocument, 
+    deleteDocument, toggleFavorite, setSortType, sortType, moveDocument,
     setSettingsModalOpen, toggleDocumentLock, setSideDocument, sideDocumentId,
     language, setLanguage
   } = useAppStore();
   
-  const t = translations[language].sidebar;
-  const ts = translations[language].sort;
+  const t = (translations[language] || translations.ja).sidebar;
+  const ts = (translations[language] || translations.ja).sort;
   
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});

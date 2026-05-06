@@ -6,10 +6,11 @@ import { LockScreen } from './LockScreen';
 import { getAppLockSettings } from '../lib/supabase';
 
 import { PageEditor } from './PageEditor';
-import { Columns } from 'lucide-react';
+import { translations } from '../i18n';
 
 export const Editor: React.FC = () => {
-  const { documents, activeDocumentId, sideDocumentId, createDocument, selectDocument } = useAppStore();
+  const { documents, activeDocumentId, sideDocumentId, createDocument, selectDocument, language } = useAppStore();
+  const t = (translations[language] || translations.ja).editor;
 
   useEffect(() => {
     if (!activeDocumentId && documents.length > 0) {
@@ -21,10 +22,10 @@ export const Editor: React.FC = () => {
     return (
       <div className="editor-empty">
         <div style={{ fontSize: 64, marginBottom: 24, opacity: 0.8 }}>📄</div>
-        <h2>ドキュメントがありません</h2>
-        <p>左のメニューから新しいドキュメントを作成してください。</p>
+        <h2>{t.empty}</h2>
+        <p>{t.noDocDesc}</p>
         <button className="btn-primary" onClick={() => createDocument(null)}>
-          ＋ 新しいドキュメントを作成
+          {t.createNew}
         </button>
       </div>
     );
@@ -36,7 +37,7 @@ export const Editor: React.FC = () => {
         {activeDocumentId ? (
           <PageEditor documentId={activeDocumentId} />
         ) : (
-          <div className="editor-empty">読み込み中...</div>
+          <div className="editor-empty">{t.loading}</div>
         )}
       </div>
       {sideDocumentId && (

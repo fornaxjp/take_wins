@@ -17,7 +17,8 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
     focusedBlockId, setFocusedBlockId, moveBlock, runCodeBlock, fetchLiveData, 
     runAIAssistant, toggleTimer, toggleBlocker, language 
   } = useAppStore();
-  const t = translations[language].ai;
+  const t = (translations[language] || translations.ja).ai;
+  const ts = (translations[language] || translations.ja).slashMenu;
   const { notify } = useNotification();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dividerRef = useRef<HTMLDivElement>(null);

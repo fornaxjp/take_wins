@@ -19,7 +19,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
     unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant, translateDocument,
     language
   } = useAppStore();
-  const t = translations[language].editor;
+  const t = (translations[language] || translations.ja).editor;
   const { notify } = useNotification();
   const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
   const [tagInput, setTagInput] = React.useState('');

@@ -14,7 +14,7 @@ interface SlashMenuProps {
 
 export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose }) => {
   const { language } = useAppStore();
-  const t = translations[language].slashMenu;
+  const t = (translations[language] || translations.ja).slashMenu;
 
   const menuItems: { type: BlockType; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
     { type: 'text', label: t.text, desc: t.textDesc, icon: <Type size={16} />, color: '#5f6368' },
