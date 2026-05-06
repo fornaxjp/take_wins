@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { FileText, Key, Building2, Smartphone, Users, Briefcase } from 'lucide-react';
 import type { Block } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { t } = useTranslation();
+  const tt = t.templates;
   const [selectedCategory, setSelectedCategory] = useState<'password' | 'account' | 'meeting'>('password');
   
   // Options for Password / Account templates
-  const [serviceType, setServiceType] = useState('Webサービス');
+  const [serviceType, setServiceType] = useState('web');
   const [fields, setFields] = useState({
     url: true,
     email: true,
@@ -19,45 +22,45 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
   const handleGenerate = () => {
     const generateId = () => Math.random().toString(36).substring(2, 9);
+    const typeLabel = tt.types[serviceType as keyof typeof tt.types];
     let title = '';
     let blocks: Block[] = [];
 
     if (selectedCategory === 'password') {
-      title = `${serviceType}のパスワード`;
+      title = `${typeLabel}${t.sidebar.untitled}`; // Or a more specific suffix
       const headerRow = [];
       const dataRow = [];
-      if (fields.url) { headerRow.push('URL'); dataRow.push('https://'); }
-      if (fields.email) { headerRow.push('Email'); dataRow.push(''); }
-      if (fields.id) { headerRow.push('ID'); dataRow.push(''); }
-      if (fields.password) { headerRow.push('Password'); dataRow.push(''); }
-      if (fields.securityQ) { headerRow.push('秘密の質問'); dataRow.push(''); }
-      if (fields.phone) { headerRow.push('電話番号'); dataRow.push(''); }
+      if (fields.url) { headerRow.push(tt.fields.url); dataRow.push('https://'); }
+      if (fields.email) { headerRow.push(tt.fields.email); dataRow.push(''); }
+      if (fields.id) { headerRow.push(tt.fields.id); dataRow.push(''); }
+      if (fields.password) { headerRow.push(tt.fields.password); dataRow.push(''); }
+      if (fields.securityQ) { headerRow.push(tt.fields.securityQ); dataRow.push(''); }
+      if (fields.phone) { headerRow.push(tt.fields.phone); dataRow.push(''); }
 
       blocks = [
-        { id: generateId(), type: 'h2', content: `${serviceType}情報` },
+        { id: generateId(), type: 'h2', content: `${typeLabel}` },
         { id: generateId(), type: 'table', content: '', data: { rows: 2, cols: headerRow.length, cells: [headerRow, dataRow] } }
       ];
     } else if (selectedCategory === 'account') {
-      title = `${serviceType}のアカウント管理`;
+      title = `${typeLabel}${t.sidebar.untitled}`;
       blocks = [
-        { id: generateId(), type: 'h2', content: `${serviceType} 基本情報` },
-        { id: generateId(), type: 'bullet_list', content: 'アカウント名: ' },
-        { id: generateId(), type: 'bullet_list', content: '登録名義: ' },
-        { id: generateId(), type: 'bullet_list', content: '引き落とし口座: ' },
+        { id: generateId(), type: 'h2', content: `${typeLabel}` },
+        { id: generateId(), type: 'bullet_list', content: `${tt.fields.id}: ` },
+        { id: generateId(), type: 'bullet_list', content: `${tt.fields.email}: ` },
         { id: generateId(), type: 'divider', content: '' },
-        { id: generateId(), type: 'h3', content: '備考' },
+        { id: generateId(), type: 'h3', content: 'Memo' },
         { id: generateId(), type: 'text', content: '' }
       ];
     } else if (selectedCategory === 'meeting') {
-      title = `【議事録】${serviceType}`;
+      title = `【${tt.categories.meeting}】${typeLabel}`;
       blocks = [
-        { id: generateId(), type: 'h3', content: '日時: ' + new Date().toLocaleDateString() },
-        { id: generateId(), type: 'h3', content: '場所/URL: https://' },
-        { id: generateId(), type: 'h3', content: '参加者: ' },
+        { id: generateId(), type: 'h3', content: 'Date: ' + new Date().toLocaleDateString() },
+        { id: generateId(), type: 'h3', content: 'Venue/URL: https://' },
+        { id: generateId(), type: 'h3', content: 'Participants: ' },
         { id: generateId(), type: 'divider', content: '' },
-        { id: generateId(), type: 'h2', content: 'アジェンダ' },
+        { id: generateId(), type: 'h2', content: 'Agenda' },
         { id: generateId(), type: 'todo_list', content: '' },
-        { id: generateId(), type: 'h2', content: '決定事項' },
+        { id: generateId(), type: 'h2', content: 'Decisions' },
         { id: generateId(), type: 'bullet_list', content: '' }
       ];
     }
@@ -67,7 +70,7 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         id: generateId(), title, blocks, isFavorite: false, 
         createdAt: Date.now(), updatedAt: Date.now(), 
         order: s.documents.length, parentId: null,
-        properties: { tags: [serviceType], status: null }
+        properties: { tags: [typeLabel], status: null }
       };
       s._dirtyDocIds.add(newDoc.id);
       return { documents: [...s.documents, newDoc], activeDocumentId: newDoc.id };
@@ -81,10 +84,10 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--menu-border)', background: 'var(--hover-bg)' }}>
           <h2 style={{ margin: 0, fontSize: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
             <FileText className="icon-blue" />
-            テンプレートから作成
+            {tt.title}
           </h2>
           <p style={{ margin: '8px 0 0 0', color: 'var(--placeholder-color)', fontSize: 14 }}>
-            用途に合わせて項目をカスタマイズして、最適なフォーマットでドキュメントを開始します。
+            {tt.desc}
           </p>
         </div>
 
@@ -92,22 +95,22 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           {/* Sidebar */}
           <div style={{ width: 180, borderRight: '1px solid var(--menu-border)', padding: '16px 8px' }}>
             <div 
-              onClick={() => setSelectedCategory('password')}
+              onClick={() => { setSelectedCategory('password'); setServiceType('web'); }}
               style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, background: selectedCategory === 'password' ? 'var(--active-bg)' : 'transparent', color: selectedCategory === 'password' ? 'var(--active-text)' : 'var(--text-color)', fontWeight: selectedCategory === 'password' ? 600 : 400 }}
             >
-              <Key size={16} /> パスワード
+              <Key size={16} /> {tt.categories.password}
             </div>
             <div 
-              onClick={() => setSelectedCategory('account')}
+              onClick={() => { setSelectedCategory('account'); setServiceType('web'); }}
               style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, background: selectedCategory === 'account' ? 'var(--active-bg)' : 'transparent', color: selectedCategory === 'account' ? 'var(--active-text)' : 'var(--text-color)', fontWeight: selectedCategory === 'account' ? 600 : 400 }}
             >
-              <Building2 size={16} /> アカウント
+              <Building2 size={16} /> {tt.categories.account}
             </div>
             <div 
-              onClick={() => setSelectedCategory('meeting')}
+              onClick={() => { setSelectedCategory('meeting'); setServiceType('meetingInternal'); }}
               style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, background: selectedCategory === 'meeting' ? 'var(--active-bg)' : 'transparent', color: selectedCategory === 'meeting' ? 'var(--active-text)' : 'var(--text-color)', fontWeight: selectedCategory === 'meeting' ? 600 : 400 }}
             >
-              <Users size={16} /> 議事録
+              <Users size={16} /> {tt.categories.meeting}
             </div>
           </div>
 
@@ -115,7 +118,7 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           <div style={{ flex: 1, padding: 24 }}>
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 8 }}>
-                {selectedCategory === 'meeting' ? 'ミーティングの種類' : 'サービスの種類'}
+                {selectedCategory === 'meeting' ? tt.meetingType : tt.serviceType}
               </label>
               <select 
                 value={serviceType} 
@@ -124,18 +127,18 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               >
                 {selectedCategory === 'meeting' ? (
                   <>
-                    <option value="社内MTG">社内MTG</option>
-                    <option value="クライアントMTG">クライアントMTG</option>
-                    <option value="1on1">1on1 面談</option>
+                    <option value="meetingInternal">{tt.types.meetingInternal}</option>
+                    <option value="meetingClient">{tt.types.meetingClient}</option>
+                    <option value="meeting1on1">{tt.types.meeting1on1}</option>
                   </>
                 ) : (
                   <>
-                    <option value="Webサービス">Webサービス</option>
-                    <option value="スマホアプリ">スマホアプリ</option>
-                    <option value="銀行口座">銀行口座</option>
-                    <option value="クレジットカード">クレジットカード</option>
-                    <option value="SNS">SNS (X, Insta等)</option>
-                    <option value="社内システム">社内システム</option>
+                    <option value="web">{tt.types.web}</option>
+                    <option value="app">{tt.types.app}</option>
+                    <option value="bank">{tt.types.bank}</option>
+                    <option value="card">{tt.types.card}</option>
+                    <option value="sns">{tt.types.sns}</option>
+                    <option value="internal">{tt.types.internal}</option>
                   </>
                 )}
               </select>
@@ -144,10 +147,10 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             {selectedCategory === 'password' && (
               <div style={{ marginBottom: 24 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--placeholder-color)', marginBottom: 12 }}>
-                  テーブルに含める項目（チェックでオンオフ）
+                  {tt.fieldsLabel}
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {Object.entries({ url: 'URL (https://...)', email: 'メールアドレス', id: 'ログインID', password: 'パスワード', securityQ: '秘密の質問', phone: '登録電話番号' }).map(([key, label]) => (
+                  {Object.keys(fields).map((key) => (
                     <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}>
                       <input 
                         type="checkbox" 
@@ -155,7 +158,7 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                         onChange={(e) => setFields({ ...fields, [key]: e.target.checked })}
                         style={{ width: 16, height: 16, accentColor: 'var(--google-blue)' }}
                       />
-                      {label}
+                      {tt.fields[key as keyof typeof tt.fields]}
                     </label>
                   ))}
                 </div>
@@ -164,7 +167,7 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             
             {selectedCategory !== 'password' && (
               <div style={{ padding: 16, background: 'var(--hover-bg)', borderRadius: 8, fontSize: 13, color: 'var(--placeholder-color)' }}>
-                このテンプレートは「{serviceType}」用に最適化された見出しとリストで構成されます。作成後に自由に編集・追記が可能です。
+                {tt.info.replace('{type}', tt.types[serviceType as keyof typeof tt.types])}
               </div>
             )}
           </div>
@@ -172,10 +175,10 @@ export const TemplateModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
         <div style={{ padding: '16px 24px', borderTop: '1px solid var(--menu-border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
           <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 20, border: 'none', background: 'transparent', color: 'var(--placeholder-color)', fontWeight: 600, cursor: 'pointer' }}>
-            キャンセル
+            {tt.cancel}
           </button>
           <button onClick={handleGenerate} className="btn-primary" style={{ padding: '10px 24px' }}>
-            作成する
+            {tt.create}
           </button>
         </div>
       </div>

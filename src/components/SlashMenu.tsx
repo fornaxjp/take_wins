@@ -2,19 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Type, Heading1, Heading2, Heading3, List, CheckSquare, Quote, Minus, Code, Table as TableIcon, Globe, Sparkles } from 'lucide-react';
 import type { BlockType } from '../types';
-import { translations } from '../i18n';
-import { useAppStore } from '../store/useAppStore';
-
-interface SlashMenuProps {
-  x: number;
-  y: number;
-  onSelect: (type: BlockType) => void;
-  onClose: () => void;
-}
+import { useTranslation } from '../hooks/useTranslation';
 
 export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose }) => {
-  const { language } = useAppStore();
-  const t = (translations[language] || translations.ja).slashMenu;
+  const { t: trans } = useTranslation();
+  const t = trans.slashMenu;
 
   const menuItems: { type: BlockType; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
     { type: 'text', label: t.text, desc: t.textDesc, icon: <Type size={16} />, color: '#5f6368' },

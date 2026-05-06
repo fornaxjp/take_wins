@@ -5,7 +5,7 @@ import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settin
 import type { Document } from '../types';
 import { TemplateModal } from './TemplateModal';
 import { BackupModal } from './BackupModal';
-import { translations } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -17,11 +17,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     documents, activeDocumentId, createDocument, selectDocument, 
     deleteDocument, toggleFavorite, setSortType, sortType, moveDocument,
     setSettingsModalOpen, toggleDocumentLock, setSideDocument, sideDocumentId,
-    language, setLanguage
+    setLanguage
   } = useAppStore();
   
-  const t = (translations[language] || translations.ja).sidebar;
-  const ts = (translations[language] || translations.ja).sort;
+  const { t: trans, language } = useTranslation();
+  const t = trans.sidebar;
+  const ts = trans.sort;
   
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});

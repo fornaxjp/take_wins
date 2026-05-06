@@ -116,6 +116,46 @@ export const translations = {
       restore: "復元",
       confirm: "この時点のデータに復元しますか？（現在の未保存の変更は失われる可能性があります）",
       warning: "注意: 復元を行うと、選択した時点以降の変更は上書きされます。必要であれば復元前に現在の状態を確認してください。",
+    },
+    templates: {
+      title: "テンプレートから作成",
+      desc: "用途に合わせて項目をカスタマイズして、最適なフォーマットでドキュメントを開始します。",
+      categories: {
+        password: "パスワード",
+        account: "アカウント",
+        meeting: "議事録"
+      },
+      serviceType: "サービスの種類",
+      meetingType: "ミーティングの種類",
+      fieldsLabel: "テーブルに含める項目",
+      fields: {
+        url: "URL",
+        email: "メールアドレス",
+        id: "ログインID",
+        password: "パスワード",
+        securityQ: "秘密の質問",
+        phone: "登録電話番号"
+      },
+      types: {
+        web: "Webサービス",
+        app: "スマホアプリ",
+        bank: "銀行口座",
+        card: "クレジットカード",
+        sns: "SNS",
+        internal: "社内システム",
+        meetingInternal: "社内MTG",
+        meetingClient: "クライアントMTG",
+        meeting1on1: "1on1 面談"
+      },
+      info: "このテンプレートは「{type}」用に最適化されています。作成後に編集可能です。",
+      cancel: "キャンセル",
+      create: "作成する"
+    },
+    lock: {
+      title: "ロックされています",
+      invalidPin: "PINコードが違います",
+      biometricFailed: "生体認証に失敗しました。PINをお試しください。",
+      useBiometric: "Face ID / Touch ID を使用"
     }
   },
   en: {
@@ -235,6 +275,46 @@ export const translations = {
       restore: "Restore",
       confirm: "Restore to this point? (Current unsaved changes may be lost)",
       warning: "Note: Restoring will overwrite changes made after the selected point.",
+    },
+    templates: {
+      title: "Create from Template",
+      desc: "Customize items according to your use case and start a document with the optimal format.",
+      categories: {
+        password: "Password",
+        account: "Account",
+        meeting: "Meeting"
+      },
+      serviceType: "Service Type",
+      meetingType: "Meeting Type",
+      fieldsLabel: "Fields to include in table",
+      fields: {
+        url: "URL",
+        email: "Email Address",
+        id: "Login ID",
+        password: "Password",
+        securityQ: "Security Question",
+        phone: "Phone Number"
+      },
+      types: {
+        web: "Web Service",
+        app: "Mobile App",
+        bank: "Bank Account",
+        card: "Credit Card",
+        sns: "SNS",
+        internal: "Internal System",
+        meetingInternal: "Internal MTG",
+        meetingClient: "Client MTG",
+        meeting1on1: "1on1"
+      },
+      info: "This template is optimized for \"{type}\". You can edit it after creation.",
+      cancel: "Cancel",
+      create: "Create"
+    },
+    lock: {
+      title: "App Locked",
+      invalidPin: "Invalid PIN",
+      biometricFailed: "Biometric authentication failed. Please use PIN.",
+      useBiometric: "Use Face ID / Touch ID"
     }
   },
   zh: {
@@ -354,6 +434,46 @@ export const translations = {
       restore: "還原",
       confirm: "還原到此時間點？（目前未儲存的變更可能會遺失）",
       warning: "注意：還原將會覆蓋所選時間點之後的變更。",
+    },
+    templates: {
+      title: "從範本創建",
+      desc: "根據您的用途自定義項目，並以最佳格式開始文件。",
+      categories: {
+        password: "密碼",
+        account: "帳號",
+        meeting: "議事錄"
+      },
+      serviceType: "服務類型",
+      meetingType: "會議類型",
+      fieldsLabel: "表格中包含的項目",
+      fields: {
+        url: "URL",
+        email: "電子郵件",
+        id: "登入 ID",
+        password: "密碼",
+        securityQ: "安全性問題",
+        phone: "電話號碼"
+      },
+      types: {
+        web: "Web 服務",
+        app: "手機應用程式",
+        bank: "銀行帳戶",
+        card: "信用卡",
+        sns: "SNS",
+        internal: "內部系統",
+        meetingInternal: "內部會議",
+        meetingClient: "客戶會議",
+        meeting1on1: "1on1 面談"
+      },
+      info: "此範本已針對「{type}」進行優化。創建後可以編輯。",
+      cancel: "取消",
+      create: "創建"
+    },
+    lock: {
+      title: "應用程式已鎖定",
+      invalidPin: "PIN 碼無效",
+      biometricFailed: "生物辨識失敗。請使用 PIN 碼。",
+      useBiometric: "使用 Face ID / Touch ID"
     }
   },
   ko: {
@@ -473,6 +593,46 @@ export const translations = {
       restore: "복원",
       confirm: "이 시점으로 복원하시겠습니까? (저장되지 않은 변경 사항이 손실될 수 있습니다)",
       warning: "주의: 복원하면 선택한 시점 이후의 변경 사항은 덮어씌워집니다.",
+    },
+    templates: {
+      title: "템플릿으로 만들기",
+      desc: "용도에 맞게 항목을 사용자 정의하여 최적의 형식으로 문서를 시작하세요.",
+      categories: {
+        password: "비밀번호",
+        account: "계정",
+        meeting: "회의록"
+      },
+      serviceType: "서비스 종류",
+      meetingType: "회의 종류",
+      fieldsLabel: "테이블에 포함할 항목",
+      fields: {
+        url: "URL",
+        email: "이메일 주소",
+        id: "로그인 ID",
+        password: "비밀번호",
+        securityQ: "비밀번호 찾기 질문",
+        phone: "등록 전화번호"
+      },
+      types: {
+        web: "웹 서비스",
+        app: "모바일 앱",
+        bank: "은행 계좌",
+        card: "신용카드",
+        sns: "SNS",
+        internal: "사내 시스템",
+        meetingInternal: "사내 회의",
+        meetingClient: "클라이언트 회의",
+        meeting1on1: "1on1 면담"
+      },
+      info: "이 템플릿은 \"{type}\" 용도로 최적화되어 있습니다. 생성 후 편집 가능합니다.",
+      cancel: "취소",
+      create: "만들기"
+    },
+    lock: {
+      title: "앱이 잠겨 있습니다",
+      invalidPin: "PIN 코드가 잘못되었습니다",
+      biometricFailed: "생체 인증에 실패했습니다. PIN을 사용해 주세요.",
+      useBiometric: "Face ID / Touch ID 사용"
     }
   }
 };

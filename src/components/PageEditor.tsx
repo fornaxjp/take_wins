@@ -7,6 +7,7 @@ import { LockScreen } from './LockScreen';
 import { getAppLockSettings } from '../lib/supabase';
 import type { Document } from '../types';
 import { translations } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PageEditorProps {
   documentId: string;
@@ -16,10 +17,10 @@ interface PageEditorProps {
 export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel }) => {
   const { 
     documents, addBlock, updateDocumentTitle, updateDocumentProperties, 
-    unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant, translateDocument,
-    language
+    unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant, translateDocument
   } = useAppStore();
-  const t = (translations[language] || translations.ja).editor;
+  const { t: trans, language } = useTranslation();
+  const t = trans.editor;
   const { notify } = useNotification();
   const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
   const [tagInput, setTagInput] = React.useState('');

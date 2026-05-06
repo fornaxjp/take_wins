@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { GripVertical, Play, Terminal, RefreshCw, Send, Sparkles, Globe, Timer as TimerIcon, OctagonAlert } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { translations } from '../i18n';
+import { useTranslation } from '../hooks/useTranslation';
 import type { Block as BlockTypeInterface } from '../types';
 import { SlashMenu } from './SlashMenu';
 import { useNotification } from './NotificationProvider';
@@ -15,10 +15,11 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
   const { 
     updateBlock, updateBlockType, updateBlockData, addBlock, removeBlock, 
     focusedBlockId, setFocusedBlockId, moveBlock, runCodeBlock, fetchLiveData, 
-    runAIAssistant, toggleTimer, toggleBlocker, language 
+    runAIAssistant, toggleTimer, toggleBlocker 
   } = useAppStore();
-  const t = (translations[language] || translations.ja).ai;
-  const ts = (translations[language] || translations.ja).slashMenu;
+  const { t: trans } = useTranslation();
+  const t = trans.ai;
+  const ts = trans.slashMenu;
   const { notify } = useNotification();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dividerRef = useRef<HTMLDivElement>(null);

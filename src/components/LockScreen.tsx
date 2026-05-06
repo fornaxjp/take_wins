@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { hashPin } from '../lib/crypto';
 import { verifyBiometric, isBiometricAvailable } from '../lib/biometric';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface LockScreenProps {
   title?: string;
@@ -11,6 +12,8 @@ interface LockScreenProps {
 }
 
 export const LockScreen: React.FC<LockScreenProps> = ({ title, pinHash, biometricEnabled, onUnlock, autoTryBiometric = true }) => {
+  const { t } = useTranslation();
+  const lt = t.lock;
   const [pin, setPin] = useState('');
   const [shake, setShake] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +51,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ title, pinHash, biometri
       if (h === pinHash) { onUnlock(); }
       else {
         setShake(true);
-        setError('PINコードが違います');
+        setError(lt.invalidPin);
         setTimeout(() => { setPin(''); setShake(false); setError(''); }, 700);
       }
     }
@@ -58,7 +61,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ title, pinHash, biometri
     setError('');
     const ok = await verifyBiometric();
     if (ok) onUnlock();
-    else setError('生体認証に失敗しました。PINをお試しください。');
+    else setError(lt.biometricFailed);
   };
 
   const pad = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
@@ -67,7 +70,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ title, pinHash, biometri
     <div className="lock-screen">
       <div className="lock-box">
         <div className="lock-icon-big">🔒</div>
-        <h2 className="lock-title">{title || 'ロックされています'}</h2>
+        <h2 className="lock-title">{title || lt.title}</h2>
         <div className={`pin-dots ${shake ? 'shake' : ''}`}>
           {[0,1,2,3].map(i => (
             <div key={i} className={`pin-dot ${pin.length > i ? 'filled' : ''} ${shake ? 'error-dot' : ''}`} />
@@ -86,7 +89,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ title, pinHash, biometri
         </div>
         {biometricEnabled && hasBiometric && (
           <button className="biometric-unlock-btn" onClick={handleBiometric}>
-            👤 Face ID / Touch ID を使用
+            👤 {lt.useBiometric}
           </button>
         )}
       </div>
