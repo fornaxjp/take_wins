@@ -205,14 +205,14 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
     updateBlockData(block.id, { cols: (data.cols || 2) + 1, cells: newCells });
   };
 
-  let placeholder = "コマンドは '/' を入力";
-  if (block.type === 'h1') placeholder = "見出し 1";
-  if (block.type === 'h2') placeholder = "見出し 2";
-  if (block.type === 'h3') placeholder = "見出し 3";
-  if (block.type === 'bullet_list') placeholder = "リスト";
-  if (block.type === 'todo_list') placeholder = "ToDo";
-  if (block.type === 'quote') placeholder = "引用...";
-  if (block.type === 'code') placeholder = "コードを入力...";
+  let placeholder = ts.placeholder;
+  if (block.type === 'h1') placeholder = ts.h1;
+  if (block.type === 'h2') placeholder = ts.h2;
+  if (block.type === 'h3') placeholder = ts.h3;
+  if (block.type === 'bullet_list') placeholder = ts.list;
+  if (block.type === 'todo_list') placeholder = ts.todo;
+  if (block.type === 'quote') placeholder = ts.quote;
+  if (block.type === 'code') placeholder = ts.code;
 
   return (
     <div 
