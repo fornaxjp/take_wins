@@ -129,42 +129,16 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
         {doc.blocks.map((block) => (
           <Block key={block.id} block={block} />
         ))}
-        <div className="empty-block-placeholder" onClick={() => addBlock(doc.blocks[doc.blocks.length-1]?.id || '', '', 'text')}>
-          ＋ クリックして追加
-        </div>
-      </div>
-
-      <div style={{ marginTop: 60, paddingBottom: 60, borderTop: '1px dashed var(--menu-border)', paddingTop: 24, textAlign: 'center' }}>
-        <button 
-          onClick={async () => {
-            setIsGeneratingAI(true);
-            notify('AIが内容を要約中...', 'info');
-            // Mock summary for now, in real app would use runAIAssistant
-            setTimeout(() => {
-              addBlock(doc.blocks[doc.blocks.length - 1]?.id || '', '【AIサマリー】このドキュメントは...（自動生成）', 'quote');
-              setIsGeneratingAI(false);
-              notify('サマリーを生成しました', 'success');
-            }, 1500);
-          }}
-          disabled={isGeneratingAI || doc.blocks.length < 1}
-          style={{
-            background: 'linear-gradient(135deg, #1a73e8, #ea4335)',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '24px',
-            fontWeight: 600,
-            fontSize: 14,
-            cursor: (isGeneratingAI || doc.blocks.length < 1) ? 'not-allowed' : 'pointer',
-            opacity: (isGeneratingAI || doc.blocks.length < 1) ? 0.6 : 1,
-            boxShadow: '0 4px 12px rgba(26,115,232,0.3)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          {isGeneratingAI ? '✨ 生成中...' : '✨ AIでノートをまとめる'}
-        </button>
+        {/* Invisible click area to allow clicking below the document to add a new block */}
+        <div 
+          className="editor-bottom-padding" 
+          onClick={() => {
+            const lastBlock = doc.blocks[doc.blocks.length - 1];
+            if (!lastBlock || lastBlock.content !== '') {
+              addBlock(lastBlock?.id || '', '', 'text');
+            }
+          }} 
+        />
       </div>
     </div>
   );

@@ -1327,16 +1327,10 @@ button {
 }
 
 /* ===== CLEAN EMPTY BLOCK PLACEHOLDER ===== */
-.empty-block-placeholder {
-  color: var(--placeholder-color);
-  font-size: 14px;
-  padding: 12px 0;
+.editor-bottom-padding {
+  min-height: 40vh;
+  width: 100%;
   cursor: text;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.editor-blocks:hover .empty-block-placeholder {
-  opacity: 1;
 }
 
 /* ===== BTN-SMALL MODERN ===== */
