@@ -1333,6 +1333,21 @@ button {
   cursor: text;
 }
 
+.block-divider {
+  padding: 8px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+}
+.block-divider:hover {
+  background: var(--hover-bg);
+}
+.block-divider hr {
+  border: none;
+  border-top: 1px solid var(--menu-border);
+  margin: 0;
+}
+
 /* ===== BTN-SMALL MODERN ===== */
 .btn-small {
   background: var(--hover-bg);

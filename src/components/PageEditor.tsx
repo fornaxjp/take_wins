@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Block } from './Block';
-import { Tag, CircleDashed, Lock, X, BrainCircuit } from 'lucide-react';
+import { Tag, CircleDashed, Lock, X, BrainCircuit, Globe } from 'lucide-react';
 import { useNotification } from './NotificationProvider';
 import { LockScreen } from './LockScreen';
 import { getAppLockSettings } from '../lib/supabase';
@@ -13,7 +13,10 @@ interface PageEditorProps {
 }
 
 export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel }) => {
-  const { documents, addBlock, updateDocumentTitle, updateDocumentProperties, unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant } = useAppStore();
+  const { 
+    documents, addBlock, updateDocumentTitle, updateDocumentProperties, 
+    unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant, translateDocument 
+  } = useAppStore();
   const { notify } = useNotification();
   const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
   const [tagInput, setTagInput] = React.useState('');
@@ -121,6 +124,14 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
           <div className="property-value" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontWeight: 800, fontSize: 18, color: props.priority > 80 ? 'var(--google-red)' : 'var(--google-blue)' }}>{props.priority || 0}</span>
             <button className="btn-small" onClick={scorePriority} disabled={isGeneratingAI}>AIで分析</button>
+          </div>
+        </div>
+        <div className="property-row">
+          <div className="property-label"><Globe size={16} className="icon-blue" /> <span>AI翻訳</span></div>
+          <div className="property-value" style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-small" onClick={async () => { setIsGeneratingAI(true); await translateDocument('English'); setIsGeneratingAI(false); }} disabled={isGeneratingAI}>English</button>
+            <button className="btn-small" onClick={async () => { setIsGeneratingAI(true); await translateDocument('Traditional Chinese (Taiwan)'); setIsGeneratingAI(false); }} disabled={isGeneratingAI}>繁體中文</button>
+            <button className="btn-small" onClick={async () => { setIsGeneratingAI(true); await translateDocument('Korean'); setIsGeneratingAI(false); }} disabled={isGeneratingAI}>한국어</button>
           </div>
         </div>
       </div>

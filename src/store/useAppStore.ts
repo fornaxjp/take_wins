@@ -60,6 +60,7 @@ interface AppState {
   runCodeBlock: (id: string) => Promise<void>;
   fetchLiveData: (id: string) => Promise<void>;
   runAIAssistant: (id: string, prompt: string) => Promise<void>;
+  translateDocument: (targetLang: string) => Promise<void>;
   toggleTimer: (id: string) => void;
   toggleBlocker: (id: string, reason?: string) => void;
 }
@@ -545,6 +546,64 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }
   },
 
+  translateDocument: async (targetLang) => {
+    const { documents, activeDocumentId } = get();
+    const doc = documents.find(d => d.id === activeDocumentId);
+    if (!doc) return;
+
+    const keys = JSON.parse(localStorage.getItem('tw_ai_keys') || '{}');
+    const model = localStorage.getItem('tw_ai_model') || 'openai';
+
+    const prompt = `Translate the following JSON document blocks to ${targetLang}. 
+    Translate the 'content' field and any text within the 'data' field (like table cells or titles).
+    Keep the IDs and structure EXACTLY the same.
+    Output ONLY the valid JSON array of blocks. Do not include markdown code blocks or explanations.
+    
+    JSON:
+    ${JSON.stringify(doc.blocks)}`;
+
+    try {
+      let output = '';
+      const callAI = async (p: string) => {
+        if (model === 'openai' && keys.openai) {
+          const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.openai}` },
+            body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: p }] })
+          });
+          const data = await res.json();
+          return data.choices[0].message.content;
+        } else if (model === 'gemini' && keys.gemini) {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${keys.gemini}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+          });
+          const data = await res.json();
+          return data.candidates[0].content.parts[0].text;
+        }
+        return null;
+      };
+
+      output = await callAI(prompt) || '';
+      // Clean output from possible markdown code blocks
+      const cleanedOutput = output.replace(/```json/g, '').replace(/```/g, '').trim();
+      const translatedBlocks = JSON.parse(cleanedOutput);
+
+      if (Array.isArray(translatedBlocks)) {
+        set(s => ({
+          documents: s.documents.map(d => d.id === activeDocumentId ? {
+            ...d,
+            blocks: translatedBlocks,
+            updatedAt: Date.now()
+          } : d)
+        }));
+        get().markDirty(activeDocumentId!);
+      }
+    } catch (e) {
+      console.error('Translation Error:', e);
+    }
+  },
   toggleTimer: (id) => {
     const { activeDocumentId } = get();
     if (!activeDocumentId) return;
