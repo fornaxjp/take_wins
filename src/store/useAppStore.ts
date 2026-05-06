@@ -308,7 +308,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   removeBlock: (id) => {
-    set(s => ({ documents: s.documents.map(d => d.id === s.activeDocumentId ? { ...d, blocks: d.blocks.filter(b => b.id !== id), updatedAt: Date.now() } : d) }));
+    let fallbackId: string | null = null;
+    set(s => {
+      const docs = s.documents.map(d => {
+        if (d.id !== s.activeDocumentId) return d;
+        const newBlocks = d.blocks.filter(b => b.id !== id);
+        if (newBlocks.length === 0) {
+          fallbackId = generateId();
+          return { ...d, blocks: [{ id: fallbackId, type: 'text', content: '' }], updatedAt: Date.now() };
+        }
+        return { ...d, blocks: newBlocks, updatedAt: Date.now() };
+      });
+      return fallbackId ? { documents: docs, focusedBlockId: fallbackId } : { documents: docs };
+    });
     const aid = get().activeDocumentId;
     if (aid) get()._dirtyDocIds.add(aid);
   },
