@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { GripVertical, Play, Terminal, RefreshCw, Send, Sparkles, Globe, Timer as TimerIcon, OctagonAlert } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { translations } from '../i18n';
 import type { Block as BlockTypeInterface } from '../types';
 import { SlashMenu } from './SlashMenu';
 import { useNotification } from './NotificationProvider';
@@ -11,7 +12,12 @@ interface BlockProps {
 }
 
 export const Block: React.FC<BlockProps> = ({ block }) => {
-  const { updateBlock, updateBlockType, updateBlockData, addBlock, removeBlock, focusedBlockId, setFocusedBlockId, moveBlock, runCodeBlock, fetchLiveData, runAIAssistant, toggleTimer, toggleBlocker } = useAppStore();
+  const { 
+    updateBlock, updateBlockType, updateBlockData, addBlock, removeBlock, 
+    focusedBlockId, setFocusedBlockId, moveBlock, runCodeBlock, fetchLiveData, 
+    runAIAssistant, toggleTimer, toggleBlocker, language 
+  } = useAppStore();
+  const t = translations[language].ai;
   const { notify } = useNotification();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dividerRef = useRef<HTMLDivElement>(null);
@@ -369,35 +375,35 @@ export const Block: React.FC<BlockProps> = ({ block }) => {
                   handleKeyDown(e);
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    if (block.content.trim()) runAIAssistant(block.id, block.content);
+                   if (block.content.trim()) runAIAssistant(block.id, block.content);
                   }
                 }}
-                placeholder="AIに文章や表の作成を依頼する..."
+                placeholder={t.placeholder}
                 className="ai-textarea-modern"
                 rows={1}
-                disabled={block.executionResult?.output === '思考中...'}
+                disabled={block.executionResult?.output === t.thinking}
               />
               <button 
                 onClick={() => runAIAssistant(block.id, block.content)} 
                 className="ai-send-btn-modern"
-                disabled={!block.content.trim() || block.executionResult?.output === '思考中...'}
+                disabled={!block.content.trim() || block.executionResult?.output === t.thinking}
               >
                 <Send size={14} />
               </button>
             </div>
-            {block.executionResult && block.executionResult.output === '思考中...' && (
+            {block.executionResult && block.executionResult.output === t.thinking && (
               <div className="ai-loading-state">
                 <div className="ai-shimmer"></div>
-                <span>AIが思考中...</span>
+                <span>{t.thinking}</span>
               </div>
             )}
-            {block.executionResult && block.executionResult.output !== '思考中...' && (
+            {block.executionResult && block.executionResult.output !== t.thinking && (
               <div className="ai-stuck-recovery">
-                <p>前回の生成結果が残っています。再生成するか削除してください。</p>
+                <p>{t.stuck}</p>
                 <div className="ai-output-preview">{block.executionResult.output.substring(0, 100)}...</div>
                 <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                  <button onClick={() => runAIAssistant(block.id, block.content)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: '#8b5cf6', color: 'white', border: 'none', cursor: 'pointer' }}>再生成</button>
-                  <button onClick={() => removeBlock(block.id)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: 'var(--google-red)', color: 'white', border: 'none', cursor: 'pointer' }}>削除</button>
+                  <button onClick={() => runAIAssistant(block.id, block.content)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: '#8b5cf6', color: 'white', border: 'none', cursor: 'pointer' }}>{t.regenerate}</button>
+                  <button onClick={() => removeBlock(block.id)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: 'var(--google-red)', color: 'white', border: 'none', cursor: 'pointer' }}>{t.delete}</button>
                 </div>
               </div>
             )}

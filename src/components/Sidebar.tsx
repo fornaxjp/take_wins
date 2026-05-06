@@ -5,6 +5,7 @@ import { FileText, Plus, Star, Trash2, ChevronRight, ChevronDown, Search, Settin
 import type { Document } from '../types';
 import { TemplateModal } from './TemplateModal';
 import { BackupModal } from './BackupModal';
+import { translations } from '../i18n';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -13,10 +14,12 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { 
-    documents, activeDocumentId, createDocument, selectDocument, 
-    deleteDocument, toggleFavorite, setSortType, sortType, moveDocument,
-    setSettingsModalOpen, toggleDocumentLock, setSideDocument, sideDocumentId
+    setSettingsModalOpen, toggleDocumentLock, setSideDocument, sideDocumentId,
+    language, setLanguage
   } = useAppStore();
+  
+  const t = translations[language].sidebar;
+  const ts = translations[language].sort;
   
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -74,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const id = Math.random().toString(36).substring(2, 9);
     useAppStore.setState(s => {
       const newDoc: Document = { 
-        id, title: '新しいフォルダ', blocks: [], isFavorite: false, 
+        id, title: t.newFolderDefault, blocks: [], isFavorite: false, 
         createdAt: Date.now(), updatedAt: Date.now(), order: s.documents.length, parentId: null,
         properties: { tags: [], status: null, isFolder: true }
       };
@@ -120,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ) : (
             <FileText size={18} className={`sidebar-icon ${getIconColorClass(doc.id)}`} />
           )}
-          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{doc.title || (isFolder ? '新しいフォルダ' : '無題')}</span>
+          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{doc.title || (isFolder ? t.newFolderDefault : t.untitled)}</span>
           {!isFolder && props.status && (
             <span style={{ fontSize: 9, padding: '2px 6px', background: 'var(--hover-bg)', borderRadius: 8, color: 'var(--placeholder-color)', whiteSpace: 'nowrap' }}>
               {props.status === 'Not Started' ? '未着手' : props.status === 'In Progress' ? '進行中' : props.status === 'Done' ? '完了' : props.status}
@@ -164,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}></div>
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="sidebar-logo">
             <div style={{ display: 'flex', gap: 2 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-blue)' }} />
@@ -172,16 +175,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <span>Take wins</span>
           </div>
+          <select 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value as any)}
+            style={{ fontSize: 10, background: 'var(--hover-bg)', border: 'none', borderRadius: 4, padding: '2px 4px', cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="ja">JP</option>
+            <option value="en">EN</option>
+            <option value="zh">TW</option>
+            <option value="ko">KR</option>
+          </select>
         </div>
 
         <div style={{ display: 'flex', gap: 8, padding: '0 12px' }}>
           <button onClick={() => createDocument(null)} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 8px', padding: '10px' }}>
             <Plus size={20} className="icon-blue" />
-            <span>作成</span>
+            <span>{t.newDoc}</span>
           </button>
           <button onClick={createFolder} className="sidebar-new-btn-google" style={{ flex: 1, margin: '8px 0 8px', padding: '10px' }}>
             <span style={{ fontSize: 16 }}>📁</span>
-            <span>フォルダ</span>
+            <span>{t.newFolder}</span>
           </button>
         </div>
 
@@ -193,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <LayoutTemplate size={16} className="icon-yellow" />
-            テンプレートから作成
+            {t.template}
           </button>
         </div>
 
@@ -201,26 +214,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <label htmlFor="sidebar-search" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <Search size={18} className="sidebar-search-icon" />
           </label>
-          <input id="sidebar-search" type="text" placeholder="マイドキュメントを検索" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <input id="sidebar-search" type="text" placeholder={t.search} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, null)}>
-          <div className="sidebar-section-title">お気に入り</div>
-          {favorites.length > 0 ? favorites.map(doc => renderItem(doc, 0)) : <div style={{ padding: '8px 24px', fontSize: 12, opacity: 0.5 }}>お気に入りはまだありません</div>}
+          <div className="sidebar-section-title">{t.favorites}</div>
+          {favorites.length > 0 ? favorites.map(doc => renderItem(doc, 0)) : <div style={{ padding: '8px 24px', fontSize: 12, opacity: 0.5 }}>{t.noFavorites}</div>}
           
           <div className="sidebar-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>マイドライブ</span>
+            <span>{t.myDrive}</span>
             <select 
               value={sortType} 
               onChange={(e) => setSortType(e.target.value)}
               style={{ fontSize: 10, background: 'transparent', border: 'none', color: 'var(--placeholder-color)', cursor: 'pointer', outline: 'none' }}
             >
-              <option value="custom">手動並べ替え</option>
-              <option value="date">更新日順</option>
-              <option value="createdDate">作成日順</option>
-              <option value="title">名前順</option>
-              <option value="status">ステータス順</option>
-              <option value="priority">優先度順</option>
+              <option value="custom">{ts.custom}</option>
+              <option value="date">{ts.date}</option>
+              <option value="createdDate">{ts.createdDate}</option>
+              <option value="title">{ts.title}</option>
+              <option value="status">{ts.status}</option>
+              <option value="priority">{ts.priority}</option>
             </select>
           </div>
           {renderDocTree(null, 0)}
@@ -229,11 +242,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--menu-border)', padding: '12px' }}>
           <div className="sidebar-item" onClick={() => setIsBackupModalOpen(true)}>
             <History size={18} className="sidebar-icon" />
-            <span className="sidebar-item-title">履歴と復元</span>
+            <span className="sidebar-item-title">{t.history}</span>
           </div>
           <div className="sidebar-item" onClick={() => { setSettingsModalOpen(true); if (onClose) onClose(); }}>
             <Settings size={18} className="sidebar-icon" />
-            <span className="sidebar-item-title">設定とアカウント管理</span>
+            <span className="sidebar-item-title">{t.settings}</span>
           </div>
         </div>
       </div>

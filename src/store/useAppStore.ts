@@ -27,6 +27,8 @@ interface AppState {
   _dirtyDocIds: Set<string>;
   unlockedDocIds: Set<string>;
   syncStatus: SyncStatus;
+  language: 'ja' | 'en' | 'zh' | 'ko';
+  setLanguage: (lang: 'ja' | 'en' | 'zh' | 'ko') => void;
 
   setUserId: (id: string | null) => void;
   setSettingsModalOpen: (open: boolean) => void;
@@ -79,6 +81,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fontSize: localStorage.getItem('tw_fontSize') || "16px",
   _dirtyDocIds: new Set<string>(),
   unlockedDocIds: new Set<string>(),
+  language: (localStorage.getItem('tw_lang') as any) || 'ja',
+  setLanguage: (lang) => {
+    set({ language: lang });
+    localStorage.setItem('tw_lang', lang);
+  },
 
   setUserId: (id) => set({ userId: id }),
   setSettingsModalOpen: (open) => set({ isSettingsModalOpen: open }),

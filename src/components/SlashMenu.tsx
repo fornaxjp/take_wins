@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Type, Heading1, Heading2, Heading3, List, CheckSquare, Quote, Minus, Code, Table as TableIcon, Globe, Sparkles } from 'lucide-react';
 import type { BlockType } from '../types';
+import { translations } from '../i18n';
+import { useAppStore } from '../store/useAppStore';
 
 interface SlashMenuProps {
   x: number;
@@ -10,22 +12,25 @@ interface SlashMenuProps {
   onClose: () => void;
 }
 
-const menuItems: { type: BlockType; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
-  { type: 'text', label: 'テキスト', desc: '通常の文章', icon: <Type size={16} />, color: '#5f6368' },
-  { type: 'h1', label: '見出し 1', desc: '大きな見出し', icon: <Heading1 size={16} />, color: '#1a73e8' },
-  { type: 'h2', label: '見出し 2', desc: '中くらいの見出し', icon: <Heading2 size={16} />, color: '#1a73e8' },
-  { type: 'h3', label: '見出し 3', desc: '小さな見出し', icon: <Heading3 size={16} />, color: '#1a73e8' },
-  { type: 'bullet_list', label: 'リスト', desc: '箇条書き', icon: <List size={16} />, color: '#34a853' },
-  { type: 'todo_list', label: 'ToDo', desc: 'チェックリスト', icon: <CheckSquare size={16} />, color: '#34a853' },
-  { type: 'quote', label: '引用', desc: '引用ブロック', icon: <Quote size={16} />, color: '#fbbc04' },
-  { type: 'code', label: 'コード', desc: '実行可能コードブロック', icon: <Code size={16} />, color: '#ea4335' },
-  { type: 'table', label: 'テーブル', desc: '表を挿入', icon: <TableIcon size={16} />, color: '#5f6368' },
-  { type: 'divider', label: '区切り線', desc: 'セクション区切り', icon: <Minus size={16} />, color: '#9aa0a6' },
-  { type: 'live_data', label: 'ライブデータ', desc: '株価・APIデータ', icon: <Globe size={16} />, color: '#1a73e8' },
-  { type: 'ai_assistant', label: 'AI アシスタント', desc: 'AIに質問・執筆依頼', icon: <Sparkles size={16} />, color: '#8b5cf6' },
-];
-
 export const SlashMenu: React.FC<SlashMenuProps> = ({ x, y, onSelect, onClose }) => {
+  const { language } = useAppStore();
+  const t = translations[language].slashMenu;
+
+  const menuItems: { type: BlockType; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
+    { type: 'text', label: t.text, desc: t.textDesc, icon: <Type size={16} />, color: '#5f6368' },
+    { type: 'h1', label: t.h1, desc: t.h1Desc, icon: <Heading1 size={16} />, color: '#1a73e8' },
+    { type: 'h2', label: t.h2, desc: t.h2Desc, icon: <Heading2 size={16} />, color: '#1a73e8' },
+    { type: 'h3', label: t.h3, desc: t.h3Desc, icon: <Heading3 size={16} />, color: '#1a73e8' },
+    { type: 'bullet_list', label: t.list, desc: t.listDesc, icon: <List size={16} />, color: '#34a853' },
+    { type: 'todo_list', label: t.todo, desc: t.todoDesc, icon: <CheckSquare size={16} />, color: '#34a853' },
+    { type: 'quote', label: t.quote, desc: t.quoteDesc, icon: <Quote size={16} />, color: '#fbbc04' },
+    { type: 'code', label: t.code, desc: t.codeDesc, icon: <Code size={16} />, color: '#ea4335' },
+    { type: 'table', label: t.table, desc: t.tableDesc, icon: <TableIcon size={16} />, color: '#5f6368' },
+    { type: 'divider', label: t.divider, desc: t.dividerDesc, icon: <Minus size={16} />, color: '#9aa0a6' },
+    { type: 'live_data', label: t.liveData, desc: t.liveDataDesc, icon: <Globe size={16} />, color: '#1a73e8' },
+    { type: 'ai_assistant', label: t.aiAssistant, desc: t.aiAssistantDesc, icon: <Sparkles size={16} />, color: '#8b5cf6' },
+  ];
+
   const menuRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 

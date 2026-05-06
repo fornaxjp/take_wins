@@ -6,6 +6,7 @@ import { useNotification } from './NotificationProvider';
 import { LockScreen } from './LockScreen';
 import { getAppLockSettings } from '../lib/supabase';
 import type { Document } from '../types';
+import { translations } from '../i18n';
 
 interface PageEditorProps {
   documentId: string;
@@ -15,8 +16,10 @@ interface PageEditorProps {
 export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel }) => {
   const { 
     documents, addBlock, updateDocumentTitle, updateDocumentProperties, 
-    unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant, translateDocument 
+    unlockedDocIds, unlockDocument, setSideDocument, runAIAssistant, translateDocument,
+    language
   } = useAppStore();
+  const t = translations[language].editor;
   const { notify } = useNotification();
   const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
   const [tagInput, setTagInput] = React.useState('');
@@ -91,28 +94,28 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
         className="editor-title-input"
         value={doc.title}
         onChange={(e) => updateDocumentTitle(doc.id, e.target.value)}
-        placeholder="無題"
+        placeholder={t.untitled}
       />
 
       <div className="editor-properties">
         <div className="property-row">
-          <div className="property-label"><CircleDashed size={16} /> <span>ステータス</span></div>
+          <div className="property-label"><CircleDashed size={16} /> <span>{t.status}</span></div>
           <select value={props.status || ''} onChange={(e) => updateDocumentProperties(doc.id, { status: e.target.value })}>
-            <option value="">未設定</option>
-            <option value="Not Started">⚪️ 未着手</option>
-            <option value="In Progress">🔵 進行中</option>
-            <option value="Done">🟢 完了</option>
+            <option value="">{t.loading}</option>
+            <option value="Not Started">⚪️ {t.notStarted}</option>
+            <option value="In Progress">🔵 {t.inProgress}</option>
+            <option value="Done">🟢 {t.done}</option>
           </select>
         </div>
         <div className="property-row">
-          <div className="property-label"><Tag size={16} /> <span>タグ</span></div>
+          <div className="property-label"><Tag size={16} /> <span>{t.tags}</span></div>
           <div className="property-value">
             {props.tags.map((tag: string) => (
               <span key={tag} className="property-tag">{tag} <button onClick={() => removeTag(tag)}>×</button></span>
             ))}
             <input 
               className="property-tag-input" 
-              placeholder="＋ タグを追加" 
+              placeholder={t.addTag} 
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleAddTag} 
@@ -120,14 +123,14 @@ export const PageEditor: React.FC<PageEditorProps> = ({ documentId, isSidePanel 
           </div>
         </div>
         <div className="property-row">
-          <div className="property-label"><BrainCircuit size={16} className="icon-yellow" /> <span>優先度スコア</span></div>
+          <div className="property-label"><BrainCircuit size={16} className="icon-yellow" /> <span>{t.priority}</span></div>
           <div className="property-value" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontWeight: 800, fontSize: 18, color: props.priority > 80 ? 'var(--google-red)' : 'var(--google-blue)' }}>{props.priority || 0}</span>
-            <button className="btn-small" onClick={scorePriority} disabled={isGeneratingAI}>AIで分析</button>
+            <button className="btn-small" onClick={scorePriority} disabled={isGeneratingAI}>{t.aiAnalyze}</button>
           </div>
         </div>
         <div className="property-row">
-          <div className="property-label"><Globe size={16} className="icon-blue" /> <span>AI翻訳</span></div>
+          <div className="property-label"><Globe size={16} className="icon-blue" /> <span>{t.aiTranslate}</span></div>
           <div className="property-value" style={{ display: 'flex', gap: 8 }}>
             <button className="btn-small" onClick={async () => { setIsGeneratingAI(true); await translateDocument('English'); setIsGeneratingAI(false); }} disabled={isGeneratingAI}>English</button>
             <button className="btn-small" onClick={async () => { setIsGeneratingAI(true); await translateDocument('Traditional Chinese (Taiwan)'); setIsGeneratingAI(false); }} disabled={isGeneratingAI}>繁體中文</button>
