@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/useAppStore';
+import { useTranslation } from '../hooks/useTranslation';
+import { Globe } from 'lucide-react';
 
 export const Auth: React.FC = () => {
+  const { setLanguage } = useAppStore();
+  const { t, language } = useTranslation();
+  const at = t.auth;
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,14 +31,9 @@ export const Auth: React.FC = () => {
         }
       });
       if (error) setMessage(error.message);
-      else setMessage('確認メールを送りました。メール内のリンクをクリックして本登録を完了してください。');
+      else setMessage(at.checkEmail);
     }
     setLoading(false);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    useAppStore.getState().clearDocuments();
   };
 
   return (
@@ -44,21 +45,43 @@ export const Auth: React.FC = () => {
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--google-yellow)' }} />
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--google-green)' }} />
         </div>
-        <h1 className="auth-subtitle">{isLoginMode ? 'ログイン' : 'アカウント作成'}</h1>
-        <p className="auth-desc">Take wins で作業を続けましょう</p>
+        <h1 className="auth-subtitle">{isLoginMode ? at.login : at.signUp}</h1>
+        <p className="auth-desc">{at.desc}</p>
         
         <form className="auth-form" onSubmit={handleSubmit}>
-          <input type="email" placeholder="メールアドレス" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input type="password" placeholder="パスワード" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+          <input type="email" placeholder={at.email} value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder={at.password} value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
           <button type="submit" disabled={loading} className="auth-submit-btn">
-            {loading ? '処理中...' : (isLoginMode ? '次へ' : '登録する')}
+            {loading ? at.processing : (isLoginMode ? at.next : at.register)}
           </button>
         </form>
 
         <button className="auth-toggle-btn" onClick={() => { setIsLoginMode(!isLoginMode); setMessage(''); }}>
-          {isLoginMode ? 'アカウントを作成する' : '既にアカウントをお持ちの方'}
+          {isLoginMode ? at.noAccount : at.hasAccount}
         </button>
         {message && <p className="auth-message">{message}</p>}
+
+        <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--menu-border)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+          <Globe size={16} style={{ color: 'var(--placeholder-color)' }} />
+          <select 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value as any)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              color: 'var(--placeholder-color)', 
+              fontSize: 13, 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+          >
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+            <option value="zh">繁體中文</option>
+            <option value="ko">한국어</option>
+          </select>
+        </div>
       </div>
     </div>
   );

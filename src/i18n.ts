@@ -156,6 +156,19 @@ export const translations = {
       invalidPin: "PINコードが違います",
       biometricFailed: "生体認証に失敗しました。PINをお試しください。",
       useBiometric: "Face ID / Touch ID を使用"
+    },
+    auth: {
+      login: "ログイン",
+      signUp: "アカウント作成",
+      desc: "Take wins で作業を続けましょう",
+      email: "メールアドレス",
+      password: "パスワード",
+      next: "次へ",
+      register: "登録する",
+      processing: "処理中...",
+      noAccount: "アカウントを作成する",
+      hasAccount: "既にアカウントをお持ちの方",
+      checkEmail: "確認メールを送りました。メール内のリンクをクリックして本登録を完了してください。"
     }
   },
   en: {
@@ -315,6 +328,19 @@ export const translations = {
       invalidPin: "Invalid PIN",
       biometricFailed: "Biometric authentication failed. Please use PIN.",
       useBiometric: "Use Face ID / Touch ID"
+    },
+    auth: {
+      login: "Login",
+      signUp: "Create Account",
+      desc: "Continue your work with Take wins",
+      email: "Email Address",
+      password: "Password",
+      next: "Next",
+      register: "Sign Up",
+      processing: "Processing...",
+      noAccount: "Create an account",
+      hasAccount: "Already have an account?",
+      checkEmail: "Confirmation email sent. Please check your inbox to complete registration."
     }
   },
   zh: {
@@ -474,6 +500,19 @@ export const translations = {
       invalidPin: "PIN 碼無效",
       biometricFailed: "生物辨識失敗。請使用 PIN 碼。",
       useBiometric: "使用 Face ID / Touch ID"
+    },
+    auth: {
+      login: "登入",
+      signUp: "建立帳號",
+      desc: "在 Take wins 繼續您的工作",
+      email: "電子郵件",
+      password: "密碼",
+      next: "下一步",
+      register: "註冊",
+      processing: "處理中...",
+      noAccount: "建立新帳號",
+      hasAccount: "已有帳號？",
+      checkEmail: "已發送確認郵件。請檢查您的信箱以完成註冊。"
     }
   },
   ko: {
@@ -633,6 +672,19 @@ export const translations = {
       invalidPin: "PIN 코드가 잘못되었습니다",
       biometricFailed: "생체 인증에 실패했습니다. PIN을 사용해 주세요.",
       useBiometric: "Face ID / Touch ID 사용"
+    },
+    auth: {
+      login: "로그인",
+      signUp: "계정 만들기",
+      desc: "Take wins에서 작업을 계속하세요",
+      email: "이메일 주소",
+      password: "비밀번호",
+      next: "다음",
+      register: "가입하기",
+      processing: "처리 중...",
+      noAccount: "계정 만들기",
+      hasAccount: "이미 계정이 있으신가요?",
+      checkEmail: "확인 이메일을 보냈습니다. 이메일의 링크를 클릭하여 가입을 완료하세요."
     }
   }
 };
