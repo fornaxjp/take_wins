@@ -31,7 +31,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   let displayDocs = [...documents];
   if (sortType === 'date') displayDocs.sort((a, b) => b.updatedAt - a.updatedAt);
+  else if (sortType === 'createdDate') displayDocs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   else if (sortType === 'title') displayDocs.sort((a, b) => a.title.localeCompare(b.title));
+  else if (sortType === 'status') displayDocs.sort((a, b) => ((a.properties?.status || '') > (b.properties?.status || '') ? 1 : -1));
+  else if (sortType === 'priority') displayDocs.sort((a, b) => (b.properties?.priority || 0) - (a.properties?.priority || 0));
   else displayDocs.sort((a, b) => a.order - b.order);
 
   if (searchQuery) {
@@ -117,7 +120,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ) : (
             <FileText size={18} className={`sidebar-icon ${getIconColorClass(doc.id)}`} />
           )}
-          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title || (isFolder ? '新しいフォルダ' : '無題のドキュメント')}</span>
+          <span className="sidebar-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{doc.title || (isFolder ? '新しいフォルダ' : '無題')}</span>
+          {!isFolder && props.status && (
+            <span style={{ fontSize: 9, padding: '2px 6px', background: 'var(--hover-bg)', borderRadius: 8, color: 'var(--placeholder-color)', whiteSpace: 'nowrap' }}>
+              {props.status === 'Not Started' ? '未着手' : props.status === 'In Progress' ? '進行中' : props.status === 'Done' ? '完了' : props.status}
+            </span>
+          )}
           <div className="sidebar-item-actions">
             {!isFolder && <button onClick={(e) => { 
               e.stopPropagation(); 
@@ -200,7 +208,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="sidebar-section-title">お気に入り</div>
           {favorites.length > 0 ? favorites.map(doc => renderItem(doc, 0)) : <div style={{ padding: '8px 24px', fontSize: 12, opacity: 0.5 }}>お気に入りはまだありません</div>}
           
-          <div className="sidebar-section-title">マイドライブ</div>
+          <div className="sidebar-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>マイドライブ</span>
+            <select 
+              value={sortType} 
+              onChange={(e) => setSortType(e.target.value)}
+              style={{ fontSize: 10, background: 'transparent', border: 'none', color: 'var(--placeholder-color)', cursor: 'pointer', outline: 'none' }}
+            >
+              <option value="custom">手動並べ替え</option>
+              <option value="date">更新日順</option>
+              <option value="createdDate">作成日順</option>
+              <option value="title">名前順</option>
+              <option value="status">ステータス順</option>
+              <option value="priority">優先度順</option>
+            </select>
+          </div>
           {renderDocTree(null, 0)}
         </div>
 

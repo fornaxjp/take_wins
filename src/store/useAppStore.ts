@@ -18,7 +18,7 @@ interface AppState {
   activeDocumentId: string | null;
   sideDocumentId: string | null;
   focusedBlockId: string | null;
-  sortType: 'custom' | 'date' | 'title' | 'tag';
+  sortType: string;
   userId: string | null;
   isReady: boolean;
   isSettingsModalOpen: boolean;
